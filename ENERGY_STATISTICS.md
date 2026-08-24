@@ -1,6 +1,6 @@
-# Energy and efficiency statistics (v0.5)
+# Energy and efficiency statistics
 
-v0.5 derives energy from the MIRA WPM power registers already polled every 15 seconds.
+The integration derives energy from the MIRA WPM power registers already polled every 15 seconds.
 
 For each WPM the integration exposes:
 
@@ -25,4 +25,4 @@ OVUM describes the reported thermal power as not being a calibrated/verified hea
 
 ## Warm-water prediction
 
-Prediction of the next domestic-hot-water charging cycle is intentionally not included yet. v0.5 establishes the persistent time-series and energy foundation first. A later version can derive DHW cycle events from WPM state plus DHW temperature dynamics and build a prediction from those events.
+The persisted time-series and energy foundation is also used by the DHW analytics. Prediction of the next domestic-hot-water charging cycle is implemented separately; see `DHW_ANALYTICS.md`. It derives charging starts from the WPM `HOT_WATER` status and DHW temperature dynamics and does not control the heat pump.
