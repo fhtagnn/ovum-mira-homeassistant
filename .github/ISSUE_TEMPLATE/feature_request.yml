@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest support for an OVUM/MIRA feature
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: mira
+    attributes:
+      label: MIRA version
+  - type: textarea
+    id: feature
+    attributes:
+      label: Requested behavior
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Protocol/register information
+      description: If known, provide register names/addresses without attaching proprietary documents.

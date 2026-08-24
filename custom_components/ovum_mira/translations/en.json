@@ -1,0 +1,242 @@
+{
+  "title": "OVUM MIRA",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to OVUM MIRA",
+        "description": "Configure the Modbus TCP connection to MIRA. WPM units are addressed sequentially starting with WPM 1 (Unit ID 111).",
+        "data": {
+          "host": "Host / IP address",
+          "port": "Port",
+          "wpm_count": "Number of WPM units",
+          "login_code": "Modbus login code (leave empty if disabled)"
+        }
+      },
+      "installation": {
+        "title": "Installation configuration",
+        "description": "Optional physical sensors are configured explicitly instead of inferred from implausible register values.",
+        "data": {
+          "heating_buffer_sensor_count": "Number of heating-buffer sensors",
+          "hot_water_sensor_count": "Number of domestic-hot-water sensors",
+          "heating_circuit_1_room_sensor": "Room sensor installed for heating circuit 1",
+          "pv_sensor_module_installed": "PV sensor module installed"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to OVUM MIRA.",
+      "invalid_auth": "Modbus login was rejected.",
+      "invalid_login_code": "The login code must be an integer."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Change installation configuration",
+        "description": "Configure physical optional components and sensors.",
+        "data": {
+          "heating_buffer_sensor_count": "Number of heating-buffer sensors",
+          "hot_water_sensor_count": "Number of domestic-hot-water sensors",
+          "heating_circuit_1_room_sensor": "Room sensor installed for heating circuit 1",
+          "pv_sensor_module_installed": "PV sensor module installed"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "outside_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "buffer_temperature": {
+        "name": "Heating buffer temperature"
+      },
+      "buffer_effective_target": {
+        "name": "Heating buffer effective target"
+      },
+      "buffer_upper_temperature": {
+        "name": "Heating buffer upper temperature"
+      },
+      "dhw_temperature": {
+        "name": "Hot water temperature"
+      },
+      "dhw_upper_temperature": {
+        "name": "Hot water upper temperature"
+      },
+      "dhw_effective_target": {
+        "name": "Hot water effective target"
+      },
+      "dhw_lower_temperature": {
+        "name": "Hot water lower temperature"
+      },
+      "dhw_last_heating_start": {
+        "name": "Hot water last heating start"
+      },
+      "dhw_predicted_next_heating_start": {
+        "name": "Hot water predicted next heating start"
+      },
+      "dhw_temperature_slope": {
+        "name": "Hot water temperature slope"
+      },
+      "dhw_estimated_start_temperature": {
+        "name": "Hot water estimated start temperature"
+      },
+      "heating_circuit_actual": {
+        "name": "Heating circuit temperature"
+      },
+      "heating_circuit_effective_target": {
+        "name": "Heating circuit effective target"
+      },
+      "heating_circuit_type": {
+        "name": "Heating circuit type",
+        "state": {
+          "none": "None",
+          "uncontrolled": "Uncontrolled",
+          "return_controlled": "Return controlled",
+          "mixed": "Mixed",
+          "cube_direct": "Cube direct"
+        }
+      },
+      "electrical_energy_total": {
+        "name": "Electrical energy"
+      },
+      "thermal_energy_total": {
+        "name": "Thermal energy"
+      },
+      "electrical_energy_today": {
+        "name": "Electrical energy today"
+      },
+      "thermal_energy_today": {
+        "name": "Thermal energy today"
+      },
+      "electrical_energy_week": {
+        "name": "Electrical energy this week"
+      },
+      "thermal_energy_week": {
+        "name": "Thermal energy this week"
+      },
+      "cop_current": {
+        "name": "Current COP"
+      },
+      "work_factor_today": {
+        "name": "Work factor today"
+      },
+      "work_factor_week": {
+        "name": "Work factor this week"
+      },
+      "work_factor_total": {
+        "name": "Work factor since tracking started"
+      },
+      "system_electrical_energy_total": {
+        "name": "Total electrical energy"
+      },
+      "system_thermal_energy_total": {
+        "name": "Total thermal energy"
+      },
+      "system_electrical_energy_today": {
+        "name": "Total electrical energy today"
+      },
+      "system_thermal_energy_today": {
+        "name": "Total thermal energy today"
+      },
+      "system_electrical_energy_week": {
+        "name": "Total electrical energy this week"
+      },
+      "system_thermal_energy_week": {
+        "name": "Total thermal energy this week"
+      },
+      "system_cop_current": {
+        "name": "Total current COP"
+      },
+      "system_work_factor_today": {
+        "name": "Total work factor today"
+      },
+      "system_work_factor_week": {
+        "name": "Total work factor this week"
+      },
+      "system_work_factor_total": {
+        "name": "Total work factor since tracking started"
+      },
+      "demand": {
+        "name": "Demand"
+      },
+      "electrical_power": {
+        "name": "Electrical power"
+      },
+      "thermal_power": {
+        "name": "Thermal power"
+      },
+      "condenser_inlet": {
+        "name": "Condenser inlet"
+      },
+      "condenser_outlet": {
+        "name": "Condenser outlet"
+      },
+      "compressor_runtime": {
+        "name": "Compressor runtime"
+      },
+      "wpm_status": {
+        "name": "Status",
+        "state": {
+          "fault": "Fault",
+          "inverter_offline": "Inverter Offline",
+          "lockout": "Lockout",
+          "oil_preheating": "Oil Preheating",
+          "ready": "Ready",
+          "start": "Start",
+          "hot_water": "Hot Water",
+          "heating": "Heating",
+          "cooling": "Cooling",
+          "defrost": "Defrost",
+          "manual_defrost": "Manual Defrost",
+          "stopping": "Stopping",
+          "below_operating_limit": "Below Operating Limit",
+          "inverter_reset": "Inverter Reset"
+        }
+      }
+    },
+    "number": {
+      "pv_hot_water_target_temperature": {
+        "name": "PV – hot water target temperature"
+      },
+      "pv_heating_buffer_target_temperature": {
+        "name": "PV – heating buffer target temperature"
+      },
+      "heating_circuit_room_target_heating": {
+        "name": "Heating circuit {circuit} room target heating"
+      },
+      "pv_heating_circuit_target_raise": {
+        "name": "PV – heating circuit {circuit} target increase"
+      },
+      "pv_heating_circuit_target_reduce": {
+        "name": "PV – heating circuit {circuit} target reduction"
+      }
+    },
+    "select": {
+      "heating_circuit_mode": {
+        "name": "Heating circuit {circuit} operating mode",
+        "state": {
+          "off_frost_protection": "Off (frost protection)",
+          "automatic": "Automatic",
+          "winter_heating_only": "Winter (heating only)",
+          "summer_cooling_only": "Summer (cooling only)"
+        }
+      }
+    },
+    "switch": {
+      "hot_water_main_switch": {
+        "name": "Hot water main switch"
+      }
+    },
+    "water_heater": {
+      "hot_water": {
+        "name": "Hot water"
+      }
+    },
+    "climate": {
+      "heating_circuit_room": {
+        "name": "Heating circuit {circuit} room"
+      }
+    }
+  }
+}

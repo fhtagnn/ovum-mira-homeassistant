@@ -1,0 +1,16 @@
+{
+  "domain": "ovum_mira",
+  "name": "OVUM MIRA",
+  "codeowners": [
+    "@fhtagnn"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/fhtagnn/ovum-mira-homeassistant",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/fhtagnn/ovum-mira-homeassistant/issues",
+  "requirements": [
+    "modbus-connection[tmodbus]==4.8.1"
+  ],
+  "version": "0.1.0-beta.1"
+}

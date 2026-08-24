@@ -1,0 +1,38 @@
+name: Bug report
+description: Report reproducible integration behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include passwords, Modbus login codes, serial numbers, or private diagnostics."
+  - type: input
+    id: ha
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: input
+    id: mira
+    attributes:
+      label: MIRA version
+    validations:
+      required: true
+  - type: input
+    id: integration
+    attributes:
+      label: Integration version
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: text
