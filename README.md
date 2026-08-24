@@ -101,11 +101,12 @@ Home Assistant's standard diagnostics export contains controller state and a com
 
 Additional technical notes are included in:
 
-- `ENERGY_STATISTICS.md`
-- `DHW_ANALYTICS.md`
-- `ANALYSIS_EXPORT.md`
-- `CONTRIBUTING.md`
-- `AI_POLICY.md`
+- [Energy and efficiency statistics](docs/ENERGY_STATISTICS.md)
+- [DHW analytics](docs/DHW_ANALYTICS.md)
+- [Analysis history and diagnostics export](docs/ANALYSIS_EXPORT.md)
+- [Release setup notes](docs/RELEASE_SETUP.md)
+- [Contributing](CONTRIBUTING.md)
+- [AI-assisted development policy](AI_POLICY.md)
 
 Original OVUM protocol PDFs/XLS files are intentionally **not distributed** by this repository.
 
