@@ -24,7 +24,7 @@ jobs:
           python -m pip install -r requirements-test.txt
       - name: Compile integration
         run: python -m compileall -q custom_components/ovum_mira
-      - name: Run tests
-        run: python -m pytest -q
+      - name: Run tests with coverage
+        run: python -m pytest -q --cov=custom_components.ovum_mira --cov-report=term-missing
       - name: Run Ruff
         run: ruff check .
