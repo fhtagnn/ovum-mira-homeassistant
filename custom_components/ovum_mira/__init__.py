@@ -3,6 +3,7 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 from .const import (
     CONF_BUFFER_SENSOR_COUNT,
@@ -46,16 +47,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
         enable_ems_writes=False,
     )
     login = entry.data.get(CONF_LOGIN_CODE)
-    connection, system = await async_open_system(
-        entry.data[CONF_HOST],
-        entry.data[CONF_PORT],
-        entry.data.get(CONF_WPM_COUNT, 1),
-        login_code=int(login) if login not in (None, "") else None,
-        options=options,
-    )
+
+    try:
+        connection, system = await async_open_system(
+            entry.data[CONF_HOST],
+            entry.data[CONF_PORT],
+            entry.data.get(CONF_WPM_COUNT, 1),
+            login_code=int(login) if login not in (None, "") else None,
+            options=options,
+        )
+    except PermissionError as err:
+        raise ConfigEntryAuthFailed("OVUM MIRA login was rejected") from err
+    except OSError as err:
+        raise ConfigEntryNotReady(f"Unable to connect to OVUM MIRA: {err}") from err
 
     coordinator = OvumMiraCoordinator(hass, system, entry.entry_id)
-    await coordinator.async_initialize()
+    try:
+        await coordinator.async_initialize()
+    except Exception:
+        await connection.close()
+        raise
 
     entry.runtime_data = OvumRuntime(connection, system, coordinator)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
