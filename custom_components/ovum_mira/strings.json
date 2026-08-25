@@ -183,5 +183,10 @@
     "switch": {"hot_water_main_switch": {"name": "Hot water main switch"}},
     "water_heater": {"hot_water": {"name": "Hot water"}},
     "climate": {"heating_circuit_room": {"name": "Heating circuit {circuit} room"}}
+  },
+  "exceptions": {
+    "write_failed": {
+      "message": "Failed to write the requested setting to OVUM MIRA: {error}"
+    }
   }
 }
