@@ -152,5 +152,10 @@
     "switch": {"hot_water_main_switch": {"name": "Warmwasser Hauptschalter"}},
     "water_heater": {"hot_water": {"name": "Warmwasser"}},
     "climate": {"heating_circuit_room": {"name": "Heizkreis {circuit} Raum"}}
+  },
+  "exceptions": {
+    "write_failed": {
+      "message": "Die angeforderte Einstellung konnte nicht in OVUM MIRA geschrieben werden: {error}"
+    }
   }
 }
