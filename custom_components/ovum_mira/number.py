@@ -9,6 +9,8 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import OvumConfigEntry
 from .entity import OvumMiraEntity
 
+PARALLEL_UPDATES = 1
+
 
 class OvumTemperatureNumber(OvumMiraEntity, NumberEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -45,8 +47,7 @@ class OvumTemperatureNumber(OvumMiraEntity, NumberEntity):
         return self._getter(self.coordinator.system)
 
     async def async_set_native_value(self, value: float) -> None:
-        await self._setter(self.coordinator.system, value)
-        await self.coordinator.async_request_refresh()
+        await self._async_write_action(self._setter(self.coordinator.system, value))
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
