@@ -21,6 +21,22 @@
           "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert",
           "pv_sensor_module_installed": "PV-Sensormodul installiert"
         }
+      },
+      "reauth_confirm": {
+        "title": "Modbus Login aktualisieren",
+        "description": "Den aktuell in der MIRA eingestellten Modbus Login-Code eingeben. Leer lassen, wenn der Controller-Login deaktiviert ist.",
+        "data": {
+          "login_code": "Modbus Login-Code"
+        }
+      },
+      "reconfigure": {
+        "title": "OVUM MIRA Verbindung neu konfigurieren",
+        "description": "Modbus-TCP-Ziel oder Anzahl der WPM-Einheiten ändern. Die neue Verbindung wird vor dem Speichern geprüft.",
+        "data": {
+          "host": "Host / IP-Adresse",
+          "port": "Port",
+          "wpm_count": "Anzahl WPM-Einheiten"
+        }
       }
     },
     "error": {
@@ -45,48 +61,20 @@
   },
   "entity": {
     "sensor": {
-      "outside_temperature": {
-        "name": "Außentemperatur"
-      },
-      "buffer_temperature": {
-        "name": "Heizungspuffer Temperatur"
-      },
-      "buffer_effective_target": {
-        "name": "Heizungspuffer wirksamer Sollwert"
-      },
-      "buffer_upper_temperature": {
-        "name": "Heizungspuffer oben"
-      },
-      "dhw_temperature": {
-        "name": "Warmwasser Temperatur"
-      },
-      "dhw_upper_temperature": {
-        "name": "Warmwasser oben"
-      },
-      "dhw_effective_target": {
-        "name": "Warmwasser wirksamer Sollwert"
-      },
-      "dhw_lower_temperature": {
-        "name": "Warmwasser unten"
-      },
-      "dhw_last_heating_start": {
-        "name": "Warmwasser letzter Heizstart"
-      },
-      "dhw_predicted_next_heating_start": {
-        "name": "Warmwasser nächster Heizstart"
-      },
-      "dhw_temperature_slope": {
-        "name": "Warmwasser Temperatursteigung"
-      },
-      "dhw_estimated_start_temperature": {
-        "name": "Warmwasser geschätzte Einschalttemperatur"
-      },
-      "heating_circuit_actual": {
-        "name": "Heizkreis Istwert"
-      },
-      "heating_circuit_effective_target": {
-        "name": "Heizkreis wirksamer Sollwert"
-      },
+      "outside_temperature": {"name": "Außentemperatur"},
+      "buffer_temperature": {"name": "Heizungspuffer Temperatur"},
+      "buffer_effective_target": {"name": "Heizungspuffer wirksamer Sollwert"},
+      "buffer_upper_temperature": {"name": "Heizungspuffer oben"},
+      "dhw_temperature": {"name": "Warmwasser Temperatur"},
+      "dhw_upper_temperature": {"name": "Warmwasser oben"},
+      "dhw_effective_target": {"name": "Warmwasser wirksamer Sollwert"},
+      "dhw_lower_temperature": {"name": "Warmwasser unten"},
+      "dhw_last_heating_start": {"name": "Warmwasser letzter Heizstart"},
+      "dhw_predicted_next_heating_start": {"name": "Warmwasser nächster Heizstart"},
+      "dhw_temperature_slope": {"name": "Warmwasser Temperatursteigung"},
+      "dhw_estimated_start_temperature": {"name": "Warmwasser geschätzte Einschalttemperatur"},
+      "heating_circuit_actual": {"name": "Heizkreis Istwert"},
+      "heating_circuit_effective_target": {"name": "Heizkreis wirksamer Sollwert"},
       "heating_circuit_type": {
         "name": "Heizkreis Typ",
         "state": {
@@ -97,84 +85,32 @@
           "cube_direct": "Cube direkt"
         }
       },
-      "electrical_energy_total": {
-        "name": "Elektrische Energie"
-      },
-      "thermal_energy_total": {
-        "name": "Wärmeenergie"
-      },
-      "electrical_energy_today": {
-        "name": "Elektrische Energie heute"
-      },
-      "thermal_energy_today": {
-        "name": "Wärmeenergie heute"
-      },
-      "electrical_energy_week": {
-        "name": "Elektrische Energie diese Woche"
-      },
-      "thermal_energy_week": {
-        "name": "Wärmeenergie diese Woche"
-      },
-      "cop_current": {
-        "name": "COP aktuell"
-      },
-      "work_factor_today": {
-        "name": "Arbeitszahl heute"
-      },
-      "work_factor_week": {
-        "name": "Arbeitszahl diese Woche"
-      },
-      "work_factor_total": {
-        "name": "Arbeitszahl seit Erfassung"
-      },
-      "system_electrical_energy_total": {
-        "name": "Gesamt elektrische Energie"
-      },
-      "system_thermal_energy_total": {
-        "name": "Gesamt Wärmeenergie"
-      },
-      "system_electrical_energy_today": {
-        "name": "Gesamt elektrische Energie heute"
-      },
-      "system_thermal_energy_today": {
-        "name": "Gesamt Wärmeenergie heute"
-      },
-      "system_electrical_energy_week": {
-        "name": "Gesamt elektrische Energie diese Woche"
-      },
-      "system_thermal_energy_week": {
-        "name": "Gesamt Wärmeenergie diese Woche"
-      },
-      "system_cop_current": {
-        "name": "Gesamt COP aktuell"
-      },
-      "system_work_factor_today": {
-        "name": "Gesamt Arbeitszahl heute"
-      },
-      "system_work_factor_week": {
-        "name": "Gesamt Arbeitszahl diese Woche"
-      },
-      "system_work_factor_total": {
-        "name": "Gesamt Arbeitszahl seit Erfassung"
-      },
-      "demand": {
-        "name": "Anforderung"
-      },
-      "electrical_power": {
-        "name": "Aufnahmeleistung"
-      },
-      "thermal_power": {
-        "name": "Wärmeleistung"
-      },
-      "condenser_inlet": {
-        "name": "Kondensatoreintritt"
-      },
-      "condenser_outlet": {
-        "name": "Kondensatoraustritt"
-      },
-      "compressor_runtime": {
-        "name": "Verdichterlaufzeit"
-      },
+      "electrical_energy_total": {"name": "Elektrische Energie"},
+      "thermal_energy_total": {"name": "Wärmeenergie"},
+      "electrical_energy_today": {"name": "Elektrische Energie heute"},
+      "thermal_energy_today": {"name": "Wärmeenergie heute"},
+      "electrical_energy_week": {"name": "Elektrische Energie diese Woche"},
+      "thermal_energy_week": {"name": "Wärmeenergie diese Woche"},
+      "cop_current": {"name": "COP aktuell"},
+      "work_factor_today": {"name": "Arbeitszahl heute"},
+      "work_factor_week": {"name": "Arbeitszahl diese Woche"},
+      "work_factor_total": {"name": "Arbeitszahl seit Erfassung"},
+      "system_electrical_energy_total": {"name": "Gesamt elektrische Energie"},
+      "system_thermal_energy_total": {"name": "Gesamt Wärmeenergie"},
+      "system_electrical_energy_today": {"name": "Gesamt elektrische Energie heute"},
+      "system_thermal_energy_today": {"name": "Gesamt Wärmeenergie heute"},
+      "system_electrical_energy_week": {"name": "Gesamt elektrische Energie diese Woche"},
+      "system_thermal_energy_week": {"name": "Gesamt Wärmeenergie diese Woche"},
+      "system_cop_current": {"name": "Gesamt COP aktuell"},
+      "system_work_factor_today": {"name": "Gesamt Arbeitszahl heute"},
+      "system_work_factor_week": {"name": "Gesamt Arbeitszahl diese Woche"},
+      "system_work_factor_total": {"name": "Gesamt Arbeitszahl seit Erfassung"},
+      "demand": {"name": "Anforderung"},
+      "electrical_power": {"name": "Aufnahmeleistung"},
+      "thermal_power": {"name": "Wärmeleistung"},
+      "condenser_inlet": {"name": "Kondensatoreintritt"},
+      "condenser_outlet": {"name": "Kondensatoraustritt"},
+      "compressor_runtime": {"name": "Verdichterlaufzeit"},
       "wpm_status": {
         "name": "Status",
         "state": {
@@ -196,21 +132,11 @@
       }
     },
     "number": {
-      "pv_hot_water_target_temperature": {
-        "name": "PV – Warmwasser Solltemperatur"
-      },
-      "pv_heating_buffer_target_temperature": {
-        "name": "PV – Heizungspuffer Solltemperatur"
-      },
-      "heating_circuit_room_target_heating": {
-        "name": "Heizkreis {circuit} Raumsoll Heizen"
-      },
-      "pv_heating_circuit_target_raise": {
-        "name": "PV – Heizkreis {circuit} Sollwerterhöhung"
-      },
-      "pv_heating_circuit_target_reduce": {
-        "name": "PV – Heizkreis {circuit} Sollwertreduzierung"
-      }
+      "pv_hot_water_target_temperature": {"name": "PV – Warmwasser Solltemperatur"},
+      "pv_heating_buffer_target_temperature": {"name": "PV – Heizungspuffer Solltemperatur"},
+      "heating_circuit_room_target_heating": {"name": "Heizkreis {circuit} Raumsoll Heizen"},
+      "pv_heating_circuit_target_raise": {"name": "PV – Heizkreis {circuit} Sollwerterhöhung"},
+      "pv_heating_circuit_target_reduce": {"name": "PV – Heizkreis {circuit} Sollwertreduzierung"}
     },
     "select": {
       "heating_circuit_mode": {
@@ -223,20 +149,8 @@
         }
       }
     },
-    "switch": {
-      "hot_water_main_switch": {
-        "name": "Warmwasser Hauptschalter"
-      }
-    },
-    "water_heater": {
-      "hot_water": {
-        "name": "Warmwasser"
-      }
-    },
-    "climate": {
-      "heating_circuit_room": {
-        "name": "Heizkreis {circuit} Raum"
-      }
-    }
+    "switch": {"hot_water_main_switch": {"name": "Warmwasser Hauptschalter"}},
+    "water_heater": {"hot_water": {"name": "Warmwasser"}},
+    "climate": {"heating_circuit_room": {"name": "Heizkreis {circuit} Raum"}}
   }
 }
