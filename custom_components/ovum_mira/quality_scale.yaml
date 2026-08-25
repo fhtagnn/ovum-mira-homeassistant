@@ -17,9 +17,7 @@ rules:
     comment: No custom conditions are defined.
   docs-high-level-description: done
   docs-installation-instructions: done
-  docs-removal-instructions:
-    status: todo
-    comment: Add explicit removal and data-retention guidance to the README.
+  docs-removal-instructions: done
   docs-triggers:
     status: exempt
     comment: No custom triggers are defined.
@@ -34,22 +32,14 @@ rules:
   unique-config-entry: done
 
   # Silver
-  action-exceptions:
-    status: todo
-    comment: Wrap device write failures from entity actions in translated HomeAssistantError exceptions.
+  action-exceptions: done
   config-entry-unloading: done
-  docs-configuration-parameters:
-    status: todo
-    comment: Expand the installation-options documentation.
-  docs-installation-parameters:
-    status: todo
-    comment: Document host, port, WPM count and login code individually.
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable: done
-  parallel-updates:
-    status: todo
-    comment: Explicitly declare PARALLEL_UPDATES for each entity platform.
+  parallel-updates: done
   reauthentication-flow: done
   test-coverage:
     status: todo
@@ -74,7 +64,7 @@ rules:
   entity-device-class: done
   entity-disabled-by-default: done
   entity-translations: done
-  exception-translations: todo
+  exception-translations: done
   icon-translations: todo
   reconfiguration-flow: done
   repair-issues: todo
