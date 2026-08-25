@@ -65,19 +65,33 @@ Enable Modbus TCP on the MIRA controller and note whether a Modbus login code is
 
 Do not expose Modbus TCP directly to the internet. Keep the controller on a trusted local network.
 
+## Connection parameters
+
+The initial setup asks for the values needed to reach the existing MIRA installation:
+
+- **Host / IP address** — hostname or local IP address of the MIRA controller.
+- **Port** — Modbus TCP port. MIRA normally uses port `502`.
+- **Number of WPM units** — number of installed WPM units from `1` to `8`. WPM 1 uses Unit ID 111 and additional WPMs use the following Unit IDs up to 118.
+- **Modbus login code** — optional numeric login configured on MIRA. Leave the field empty when Modbus login is disabled on the controller.
+
+The connection is tested before the config entry is created. Later changes to host, port, or WPM count should be made with Home Assistant's **Reconfigure** flow. When authentication fails, use the **Reauthenticate** flow to replace the login code. Both flows keep the existing config entry and therefore preserve the integration's data association.
+
 ## Installation options
 
-The setup flow asks for physical installation details that cannot always be inferred safely from register values, including:
+Physical installation details that cannot be inferred safely from register values are stored as Home Assistant config-entry options and can be changed later from the integration options flow:
 
-- number of heating-buffer sensors;
-- number of DHW sensors;
-- presence of a room sensor for heating circuit 1;
-- presence of the optional PV sensor module;
-- number of WPM units.
+- **Heating-buffer sensor count** — choose `1` or `2` according to the temperature sensors physically installed. The upper-buffer-temperature entity is exposed only for a two-sensor setup.
+- **Domestic-hot-water sensor count** — choose `1` or `2`. With one sensor, the MIRA `WW_ACTUALTEMPO` input is used as the primary DHW temperature; with two sensors, the additional lower-temperature value is exposed separately.
+- **Heating circuit 1 room sensor** — enable only when a real MIRA room-temperature sensor is installed. When enabled, Home Assistant can expose a room climate entity; without it, the circuit water temperature is not presented as room temperature.
+- **PV sensor module installed** — enable when the optional MIRA PV sensor module is physically present. PV parameter entities are still disabled by default and can be enabled individually when needed.
+
+Changing these installation options reloads the config entry but does not create a new one.
 
 ## Persistent parameter writes
 
 MIRA parameter types prefixed with `P_` are persistent controller parameters. The integration writes them only when the requested value differs from the current value and performs read-back verification. They are never intentionally rewritten on every polling cycle.
+
+Write failures from Home Assistant entity actions are reported to the user rather than silently ignored.
 
 ## Energy and COP
 
@@ -96,6 +110,12 @@ The prediction is informational only and is not used to control the heat pump.
 ## Diagnostics and privacy
 
 Home Assistant's standard diagnostics export contains controller state and a compact synchronized analysis history. Credentials such as the Modbus login code are excluded. Review diagnostics before sharing them publicly because they may still reveal details about your home's operation.
+
+## Updating and removing the integration
+
+For updates, keep the existing OVUM MIRA config entry and update the custom integration in place. Do **not** delete and recreate the config entry merely to install a new version. The integration's energy, analysis-history, and DHW-analytics stores are associated with Home Assistant's config-entry ID; a newly created entry receives a different ID and will not automatically attach itself to the previous stores. See [Upgrade and data compatibility](docs/UPGRADES.md) for the supported migration path.
+
+To permanently remove the integration, open **Settings → Devices & services**, select **OVUM MIRA**, and remove its config entry. Then uninstall the custom integration from HACS, or remove `/config/custom_components/ovum_mira/` for a manual installation, and restart Home Assistant if required. Take a Home Assistant backup first if historical data or the integration-managed stores may be needed later. Reinstalling as a new config entry is not a supported method for reconnecting old integration-managed storage.
 
 ## Documentation
 
