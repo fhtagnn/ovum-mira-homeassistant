@@ -8,6 +8,8 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import OvumConfigEntry
 from .entity import OvumMiraEntity
 
+PARALLEL_UPDATES = 1
+
 
 class HeatingCircuitClimate(OvumMiraEntity, ClimateEntity):
     """Room climate entity only when a real room probe is configured.
@@ -46,8 +48,9 @@ class HeatingCircuitClimate(OvumMiraEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs) -> None:
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is not None:
-            await self._circuit.settings.async_set_room_target_heating(float(temperature))
-            await self.coordinator.async_request_refresh()
+            await self._async_write_action(
+                self._circuit.settings.async_set_room_target_heating(float(temperature))
+            )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
