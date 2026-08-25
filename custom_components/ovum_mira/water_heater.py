@@ -9,6 +9,8 @@ from . import OvumConfigEntry
 from .entity import OvumMiraEntity
 from .ovum_mira_modbus import SwitchState
 
+PARALLEL_UPDATES = 1
+
 
 class OvumHotWater(OvumMiraEntity, WaterHeaterEntity):
     _attr_translation_key = "hot_water"
@@ -43,16 +45,15 @@ class OvumHotWater(OvumMiraEntity, WaterHeaterEntity):
     async def async_set_temperature(self, **kwargs) -> None:
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is not None:
-            await self._hot_water.settings.async_set_target_temperature(round(float(temperature)))
-            await self.coordinator.async_request_refresh()
+            await self._async_write_action(
+                self._hot_water.settings.async_set_target_temperature(round(float(temperature)))
+            )
 
     async def async_turn_on(self) -> None:
-        await self._hot_water.settings.async_set_enabled(True)
-        await self.coordinator.async_request_refresh()
+        await self._async_write_action(self._hot_water.settings.async_set_enabled(True))
 
     async def async_turn_off(self) -> None:
-        await self._hot_water.settings.async_set_enabled(False)
-        await self.coordinator.async_request_refresh()
+        await self._async_write_action(self._hot_water.settings.async_set_enabled(False))
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
