@@ -57,7 +57,11 @@ class OvumMiraEntity(CoordinatorEntity[OvumMiraCoordinator]):
     @override
     def suggested_object_id(self) -> str | None:
         """Return a stable English object ID independent of UI language."""
-        return self._ovum_suggested_object_id
+        return getattr(
+            self,
+            "_attr_suggested_object_id",
+            self._ovum_suggested_object_id,
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
