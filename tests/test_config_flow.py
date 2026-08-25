@@ -92,11 +92,14 @@ async def test_full_user_flow(hass):
         CONF_PORT: PORT,
         CONF_WPM_COUNT: 2,
         CONF_LOGIN_CODE: "1234",
+    }
+    assert dict(result["result"].options) == {
         CONF_BUFFER_SENSOR_COUNT: 1,
         CONF_DHW_SENSOR_COUNT: 2,
         CONF_HK1_ROOM_SENSOR: True,
         CONF_PV_SENSOR_MODULE: False,
     }
+    assert result["result"].version == 5
     assert result["result"].unique_id == f"{HOST}:{PORT}"
     setup_entry.assert_awaited_once()
 
@@ -189,6 +192,8 @@ async def test_options_flow(hass):
             CONF_HOST: HOST,
             CONF_PORT: PORT,
             CONF_WPM_COUNT: 1,
+        },
+        options={
             CONF_BUFFER_SENSOR_COUNT: 1,
             CONF_DHW_SENSOR_COUNT: 1,
             CONF_HK1_ROOM_SENSOR: False,

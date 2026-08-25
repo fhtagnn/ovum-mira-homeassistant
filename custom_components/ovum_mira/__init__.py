@@ -22,17 +22,42 @@ from .runtime import OvumRuntime, async_open_system
 
 type OvumConfigEntry = ConfigEntry[OvumRuntime]
 
+_INSTALLATION_DEFAULTS = {
+    CONF_BUFFER_SENSOR_COUNT: 1,
+    CONF_DHW_SENSOR_COUNT: 1,
+    CONF_HK1_ROOM_SENSOR: False,
+    CONF_PV_SENSOR_MODULE: False,
+}
+
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate older prototype entries to the clean v1 schema."""
-    if entry.version < 4:
-        data = dict(entry.data)
-        if entry.version == 1:
-            data.pop(CONF_WPM_UNIT, None)
-            data[CONF_WPM_COUNT] = 1
-        data.setdefault(CONF_PV_SENSOR_MODULE, False)
-        data.pop("migrate_legacy", None)
-        hass.config_entries.async_update_entry(entry, data=data, version=4, minor_version=0)
+    """Migrate older config entries without discarding user data."""
+    if entry.version >= 5:
+        return True
+
+    data = dict(entry.data)
+    options = dict(entry.options)
+
+    if entry.version == 1:
+        data.pop(CONF_WPM_UNIT, None)
+        data[CONF_WPM_COUNT] = 1
+
+    data.pop("migrate_legacy", None)
+
+    # Since schema v5, physical installation settings live in options rather
+    # than connection data. Existing option values win over legacy data.
+    for key, default in _INSTALLATION_DEFAULTS.items():
+        if key not in options:
+            options[key] = data.get(key, default)
+        data.pop(key, None)
+
+    hass.config_entries.async_update_entry(
+        entry,
+        data=data,
+        options=options,
+        version=5,
+        minor_version=0,
+    )
     return True
 
 

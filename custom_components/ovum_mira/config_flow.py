@@ -39,7 +39,7 @@ def _installation_options_for_entry(entry: config_entries.ConfigEntry) -> Instal
 class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for OVUM MIRA."""
 
-    VERSION = 4
+    VERSION = 5
     MINOR_VERSION = 0
 
     def __init__(self) -> None:
@@ -139,14 +139,17 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_installation(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
-            data = {
-                **self._connection_data,
+            options = {
                 CONF_BUFFER_SENSOR_COUNT: user_input.get(CONF_BUFFER_SENSOR_COUNT, 1),
                 CONF_DHW_SENSOR_COUNT: user_input.get(CONF_DHW_SENSOR_COUNT, 1),
                 CONF_HK1_ROOM_SENSOR: user_input.get(CONF_HK1_ROOM_SENSOR, False),
                 CONF_PV_SENSOR_MODULE: user_input.get(CONF_PV_SENSOR_MODULE, False),
             }
-            return self.async_create_entry(title="OVUM MIRA", data=data)
+            return self.async_create_entry(
+                title="OVUM MIRA",
+                data=self._connection_data,
+                options=options,
+            )
 
         fields: dict[Any, Any] = {}
         if self._detected.get("buffer"):

@@ -6,9 +6,7 @@ rules:
   appropriate-polling: done
   brands: done
   common-modules: done
-  config-flow:
-    status: todo
-    comment: Move physical installation settings from ConfigEntry.data to ConfigEntry.options.
+  config-flow: done
   config-flow-test-coverage: done
   dependency-transparency: done
   docs-actions:

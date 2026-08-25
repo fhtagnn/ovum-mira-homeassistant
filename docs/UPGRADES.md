@@ -56,9 +56,11 @@ The test suite locks representative public-beta entity IDs and the energy-statis
 
 ## Config-entry migrations
 
-The Home Assistant config entry currently uses schema version `4`.
+The Home Assistant config entry currently uses schema version `5`.
 
-`async_migrate_entry` updates older config-entry schemas while preserving connection settings and unrelated data. Existing migration tests verify that host, port, login data, and unknown future fields are not discarded while deprecated prototype keys are normalized.
+Schema version 5 separates connection data from physical installation settings in the Home Assistant-native way: host, port, WPM count, and login code remain in `ConfigEntry.data`, while sensor counts and optional installed components live in `ConfigEntry.options`.
+
+`async_migrate_entry` updates older config-entry schemas in place. A version-4 entry is converted without changing its config-entry ID or unique ID, so the existing internal stores and entity registry associations remain attached. Existing option values take precedence over legacy copies in `data`, and unrelated future fields are preserved.
 
 Config-entry schema migrations are separate from Recorder/history migration. The integration does not import old Powercalc/helper statistics from earlier prototype setups.
 
