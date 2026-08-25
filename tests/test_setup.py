@@ -8,11 +8,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ovum_mira import (
-    _async_update_listener,
-    async_setup_entry,
-    async_unload_entry,
-)
+from custom_components.ovum_mira import async_setup_entry, async_unload_entry
 from custom_components.ovum_mira.const import (
     CONF_BUFFER_SENSOR_COUNT,
     CONF_DHW_SENSOR_COUNT,
@@ -178,14 +174,3 @@ async def test_unload_entry_keeps_connection_when_platform_unload_fails(hass):
 
     coordinator.async_save_persistent_state.assert_not_awaited()
     connection.close.assert_not_awaited()
-
-
-async def test_options_update_listener_reloads_entry(hass):
-    """Reload the integration after installation options change."""
-    entry = _entry()
-    reload_entry = AsyncMock()
-
-    with patch.object(hass.config_entries, "async_reload", new=reload_entry):
-        await _async_update_listener(hass, entry)
-
-    reload_entry.assert_awaited_once_with(entry.entry_id)

@@ -69,14 +69,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
         raise
 
     entry.runtime_data = OvumRuntime(connection, system, coordinator)
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
-
-
-async def _async_update_listener(hass: HomeAssistant, entry: OvumConfigEntry) -> None:
-    """Reload when installation options change."""
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool:

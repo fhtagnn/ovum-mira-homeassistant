@@ -182,7 +182,7 @@ async def test_installation_form_only_shows_detected_features(hass):
 
 
 async def test_options_flow(hass):
-    """Test updating physical installation options."""
+    """Test updating physical installation options and automatic reload."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -201,17 +201,20 @@ async def test_options_flow(hass):
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
 
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {
-            CONF_BUFFER_SENSOR_COUNT: 2,
-            CONF_DHW_SENSOR_COUNT: 2,
-            CONF_HK1_ROOM_SENSOR: True,
-            CONF_PV_SENSOR_MODULE: True,
-        },
-    )
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {
+                CONF_BUFFER_SENSOR_COUNT: 2,
+                CONF_DHW_SENSOR_COUNT: 2,
+                CONF_HK1_ROOM_SENSOR: True,
+                CONF_PV_SENSOR_MODULE: True,
+            },
+        )
+
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_BUFFER_SENSOR_COUNT] == 2
     assert entry.options[CONF_DHW_SENSOR_COUNT] == 2
     assert entry.options[CONF_HK1_ROOM_SENSOR] is True
     assert entry.options[CONF_PV_SENSOR_MODULE] is True
+    schedule_reload.assert_called_once_with(entry.entry_id)

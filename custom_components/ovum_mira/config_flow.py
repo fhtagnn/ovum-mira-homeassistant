@@ -48,7 +48,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry):
-        return OvumMiraOptionsFlow(config_entry)
+        return OvumMiraOptionsFlow()
 
     async def _async_test_entry_connection(
         self,
@@ -166,8 +166,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Validate and replace only the Modbus login code."""
         entry = self._get_reauth_entry()
         errors: dict[str, str] = {}
-        current_login = str(entry.data.get(CONF_LOGIN_CODE, "") or "")
-        login_text = current_login
+        login_text = ""
 
         if user_input is not None:
             login_text = user_input.get(CONF_LOGIN_CODE, "").strip()
@@ -241,14 +240,11 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class OvumMiraOptionsFlow(config_entries.OptionsFlow):
+class OvumMiraOptionsFlow(config_entries.OptionsFlowWithReload):
     """Allow physical installation details to be changed after setup."""
 
-    def __init__(self, config_entry) -> None:
-        self._entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        current = {**self._entry.data, **self._entry.options}
+        current = {**self.config_entry.data, **self.config_entry.options}
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
         schema = vol.Schema(
