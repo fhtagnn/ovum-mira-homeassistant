@@ -104,6 +104,7 @@ Additional technical notes are included in:
 - [Energy and efficiency statistics](docs/ENERGY_STATISTICS.md)
 - [DHW analytics](docs/DHW_ANALYTICS.md)
 - [Analysis history and diagnostics export](docs/ANALYSIS_EXPORT.md)
+- [Upgrade and data compatibility](docs/UPGRADES.md)
 - [Release setup notes](docs/RELEASE_SETUP.md)
 - [Contributing](CONTRIBUTING.md)
 - [AI-assisted development policy](AI_POLICY.md)
