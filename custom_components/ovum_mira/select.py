@@ -8,6 +8,8 @@ from . import OvumConfigEntry
 from .entity import OvumMiraEntity
 from .ovum_mira_modbus import HeatingCircuitMode
 
+PARALLEL_UPDATES = 1
+
 MODE_TO_OPTION = {
     HeatingCircuitMode.OFF_FROST_PROTECTION: "off_frost_protection",
     HeatingCircuitMode.AUTOMATIC: "automatic",
@@ -34,8 +36,9 @@ class HeatingCircuitModeSelect(OvumMiraEntity, SelectEntity):
         return MODE_TO_OPTION.get(self._circuit.settings.mode)
 
     async def async_select_option(self, option: str) -> None:
-        await self._circuit.settings.async_set_mode(OPTION_TO_MODE[option])
-        await self.coordinator.async_request_refresh()
+        await self._async_write_action(
+            self._circuit.settings.async_set_mode(OPTION_TO_MODE[option])
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
