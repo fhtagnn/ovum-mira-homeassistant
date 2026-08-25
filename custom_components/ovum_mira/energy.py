@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 from datetime import datetime
 import math
@@ -179,21 +180,37 @@ class EnergyBook:
         self.by_unit: dict[int, EnergyAccumulator] = {
             unit_id: EnergyAccumulator() for unit_id in unit_ids
         }
+        # Keep persisted data for temporarily unconfigured WPMs. Reconfiguring a
+        # system from two WPMs to one must not erase the second WPM's accumulated
+        # energy in case it is re-enabled later.
+        self._retained_units: dict[str, Any] = {}
 
     def load(self, data: dict[str, Any] | None) -> None:
         units = data.get("units", {}) if isinstance(data, dict) else {}
+        if not isinstance(units, dict):
+            units = {}
+
+        configured_unit_keys = {str(unit_id) for unit_id in self.by_unit}
+        self._retained_units = {
+            str(unit_id): deepcopy(value)
+            for unit_id, value in units.items()
+            if str(unit_id) not in configured_unit_keys
+        }
+
         for unit_id in list(self.by_unit):
             self.by_unit[unit_id] = EnergyAccumulator.from_storage_dict(
-                units.get(str(unit_id)) if isinstance(units, dict) else None
+                units.get(str(unit_id))
             )
 
     def as_storage_dict(self) -> dict[str, Any]:
-        return {
-            "units": {
+        units = deepcopy(self._retained_units)
+        units.update(
+            {
                 str(unit_id): accumulator.as_storage_dict()
                 for unit_id, accumulator in self.by_unit.items()
             }
-        }
+        )
+        return {"units": units}
 
     def aggregate(self) -> EnergyAccumulator:
         """Return a read-only aggregate snapshot for multi-WPM installations."""

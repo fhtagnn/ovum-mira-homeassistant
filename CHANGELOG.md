@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Added explicit upgrade/data-compatibility tests for config-entry data, internal storage, entity identity, and energy-statistics metadata.
+- Preserve accumulated energy data for temporarily unconfigured WPM units so reducing and later restoring the configured WPM count does not erase their stored totals.
+- Documented the supported in-place upgrade path and compatibility guarantees.
+
 ## 0.1.0-beta.1
 
 Initial public beta.
