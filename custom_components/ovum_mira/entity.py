@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from typing import override
+from collections.abc import Awaitable
+from typing import Any, override
 
+from modbus_connection import ModbusError
+
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -62,6 +66,18 @@ class OvumMiraEntity(CoordinatorEntity[OvumMiraCoordinator]):
             "_attr_suggested_object_id",
             self._ovum_suggested_object_id,
         )
+
+    async def _async_write_action(self, operation: Awaitable[Any]) -> None:
+        """Execute a device write and expose transport failures to the user."""
+        try:
+            await operation
+        except (ModbusError, OSError, ValueError) as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+        await self.coordinator.async_request_refresh()
 
     @property
     def device_info(self) -> DeviceInfo:
