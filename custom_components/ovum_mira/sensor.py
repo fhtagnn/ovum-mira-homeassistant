@@ -15,6 +15,8 @@ from .const import FIRST_WPM_UNIT
 from .entity import OvumMiraEntity, OvumWpmEntity
 from .ovum_mira_modbus import WpmStatus
 
+PARALLEL_UPDATES = 0
+
 
 @dataclass(frozen=True, kw_only=True)
 class SensorDef:
