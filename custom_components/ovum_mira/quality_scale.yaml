@@ -1,0 +1,90 @@
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: No custom actions or services are defined.
+  appropriate-polling: done
+  brands: done
+  common-modules: done
+  config-flow:
+    status: todo
+    comment: Move physical installation settings from ConfigEntry.data to ConfigEntry.options.
+  config-flow-test-coverage: done
+  dependency-transparency: done
+  docs-actions:
+    status: exempt
+    comment: No custom actions are defined.
+  docs-conditions:
+    status: exempt
+    comment: No custom conditions are defined.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions:
+    status: todo
+    comment: Add explicit removal and data-retention guidance to the README.
+  docs-triggers:
+    status: exempt
+    comment: No custom triggers are defined.
+  entity-event-setup:
+    status: exempt
+    comment: Entities do not create explicit event subscriptions.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions:
+    status: todo
+    comment: Wrap device write failures from entity actions in translated HomeAssistantError exceptions.
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: todo
+    comment: Expand the installation-options documentation.
+  docs-installation-parameters:
+    status: todo
+    comment: Document host, port, WPM count and login code individually.
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates:
+    status: todo
+    comment: Explicitly declare PARALLEL_UPDATES for each entity platform.
+  reauthentication-flow: done
+  test-coverage:
+    status: todo
+    comment: Aggregate coverage is above 95%; verify that every integration module individually exceeds 95%.
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery: todo
+  discovery-update-info: todo
+  docs-data-update: todo
+  docs-examples: todo
+  docs-known-limitations: todo
+  docs-supported-devices: todo
+  docs-supported-functions: todo
+  docs-troubleshooting: todo
+  docs-use-cases: todo
+  dynamic-devices:
+    status: exempt
+    comment: WPM topology is explicitly configured and changed through reconfiguration rather than runtime discovery.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations: todo
+  icon-translations: todo
+  reconfiguration-flow: done
+  repair-issues: todo
+  stale-devices: todo
+
+  # Platinum
+  async-dependency: done
+  inject-websession:
+    status: exempt
+    comment: The integration uses local Modbus TCP and does not use HTTP sessions.
+  strict-typing: todo
