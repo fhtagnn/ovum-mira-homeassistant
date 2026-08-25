@@ -8,6 +8,8 @@ from . import OvumConfigEntry
 from .entity import OvumMiraEntity
 from .ovum_mira_modbus import SwitchState
 
+PARALLEL_UPDATES = 1
+
 
 class OvumHotWaterMainSwitch(OvumMiraEntity, SwitchEntity):
     """OVUM warm-water main switch (WW_SWITCH_ON / 55000)."""
@@ -29,12 +31,10 @@ class OvumHotWaterMainSwitch(OvumMiraEntity, SwitchEntity):
         return state == SwitchState.ON
 
     async def async_turn_on(self, **kwargs) -> None:
-        await self._hot_water.settings.async_set_enabled(True)
-        await self.coordinator.async_request_refresh()
+        await self._async_write_action(self._hot_water.settings.async_set_enabled(True))
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self._hot_water.settings.async_set_enabled(False)
-        await self.coordinator.async_request_refresh()
+        await self._async_write_action(self._hot_water.settings.async_set_enabled(False))
 
 
 async def async_setup_entry(
