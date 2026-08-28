@@ -110,6 +110,19 @@ def test_energy_accumulator_tracks_mode_energy_and_one_compressor_cycle():
     )
 
 
+def test_rolling_start_average_includes_today_and_observed_zero_start_days():
+    today = datetime(2026, 8, 28, 12, 0, tzinfo=UTC)
+    acc = EnergyAccumulator()
+    acc.ensure_period(today - timedelta(days=2))
+    acc.ensure_period(today - timedelta(days=1))
+    acc.ensure_period(today)
+    acc.start_counts_by_day[today.date().isoformat()] = 6
+
+    assert acc.start_counts_by_day[(today - timedelta(days=1)).date().isoformat()] == 0
+    assert acc.start_counts_by_day[(today - timedelta(days=2)).date().isoformat()] == 0
+    assert acc.average_starts_per_day_7d == pytest.approx(2.0)
+
+
 def test_v1_migration_preserves_authoritative_totals_and_assigns_residual_to_other():
     start = datetime(2026, 8, 28, 8, 0, tzinfo=UTC)
     samples = [
