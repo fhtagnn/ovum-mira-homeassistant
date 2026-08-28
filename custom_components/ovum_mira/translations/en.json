@@ -42,12 +42,8 @@
       "reauth_confirm": {
         "title": "Update Modbus login",
         "description": "Enter the Modbus login code currently configured on the MIRA controller. Leave it empty if controller login is disabled.",
-        "data": {
-          "login_code": "Modbus login code"
-        },
-        "data_description": {
-          "login_code": "Numeric Modbus login code currently configured on MIRA, or empty if login is disabled."
-        }
+        "data": {"login_code": "Modbus login code"},
+        "data_description": {"login_code": "Numeric Modbus login code currently configured on MIRA, or empty if login is disabled."}
       },
       "reconfigure": {
         "title": "Reconfigure OVUM MIRA connection",
@@ -104,6 +100,8 @@
       "dhw_predicted_next_heating_start": {"name": "Hot water predicted next heating start"},
       "dhw_temperature_slope": {"name": "Hot water temperature slope"},
       "dhw_estimated_start_temperature": {"name": "Hot water estimated start temperature"},
+      "dhw_average_heating_interval": {"name": "Hot water average heating interval"},
+      "dhw_median_heating_interval": {"name": "Hot water median heating interval"},
       "heating_circuit_actual": {"name": "Heating circuit temperature"},
       "heating_circuit_effective_target": {"name": "Heating circuit effective target"},
       "heating_circuit_type": {
@@ -126,6 +124,21 @@
       "work_factor_today": {"name": "Work factor today"},
       "work_factor_week": {"name": "Work factor this week"},
       "work_factor_total": {"name": "Work factor since tracking started"},
+      "compressor_starts_today": {"name": "Compressor starts today"},
+      "compressor_starts_week": {"name": "Compressor starts this week"},
+      "compressor_starts_average_7d": {"name": "Average compressor starts per day (7 days)"},
+      "compressor_average_cycle_runtime": {"name": "Average compressor cycle runtime"},
+      "hot_water_electrical_energy": {"name": "Hot water electrical energy"},
+      "hot_water_thermal_energy": {"name": "Hot water thermal energy"},
+      "hot_water_work_factor": {"name": "Hot water work factor"},
+      "heating_electrical_energy": {"name": "Heating electrical energy"},
+      "heating_thermal_energy": {"name": "Heating thermal energy"},
+      "heating_work_factor": {"name": "Heating work factor"},
+      "cooling_electrical_energy": {"name": "Cooling electrical energy"},
+      "cooling_thermal_energy": {"name": "Cooling thermal energy"},
+      "cooling_work_factor": {"name": "Cooling work factor"},
+      "other_electrical_energy": {"name": "Unclassified electrical energy"},
+      "other_thermal_energy": {"name": "Unclassified thermal energy"},
       "system_electrical_energy_total": {"name": "Total electrical energy"},
       "system_thermal_energy_total": {"name": "Total thermal energy"},
       "system_electrical_energy_today": {"name": "Total electrical energy today"},
@@ -136,6 +149,10 @@
       "system_work_factor_today": {"name": "Total work factor today"},
       "system_work_factor_week": {"name": "Total work factor this week"},
       "system_work_factor_total": {"name": "Total work factor since tracking started"},
+      "system_compressor_starts_today": {"name": "Total compressor starts today"},
+      "system_compressor_starts_week": {"name": "Total compressor starts this week"},
+      "system_compressor_starts_average_7d": {"name": "Total average compressor starts per day (7 days)"},
+      "system_compressor_average_cycle_runtime": {"name": "Total average compressor cycle runtime"},
       "demand": {"name": "Demand"},
       "electrical_power": {"name": "Electrical power"},
       "thermal_power": {"name": "Thermal power"},
@@ -185,8 +202,6 @@
     "climate": {"heating_circuit_room": {"name": "Heating circuit {circuit} room"}}
   },
   "exceptions": {
-    "write_failed": {
-      "message": "Failed to write the requested setting to OVUM MIRA: {error}"
-    }
+    "write_failed": {"message": "Failed to write the requested setting to OVUM MIRA: {error}"}
   }
 }
