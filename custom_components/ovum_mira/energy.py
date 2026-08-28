@@ -243,6 +243,9 @@ class EnergyAccumulator:
             self.compressor_starts_week = 0
             for bucket in self.modes.values():
                 bucket.reset_weekly()
+        # Record zero-start days as observed days so the rolling average does not
+        # silently ignore days on which the compressor never started.
+        self.start_counts_by_day.setdefault(day, 0)
         self._prune_start_history(local_now.date())
 
     def update(
@@ -396,8 +399,15 @@ class EnergyAccumulator:
             today = date.fromisoformat(self.day_key)
         except ValueError:
             return None
-        days = [today - timedelta(days=offset) for offset in range(1, 8)]
-        tracked = [self.start_counts_by_day[day.isoformat()] for day in days if day.isoformat() in self.start_counts_by_day]
+        # Rolling seven calendar days including today. Only days actually observed
+        # by this integration are used, so a fresh installation is not diluted by
+        # invented pre-installation zeroes.
+        days = [today - timedelta(days=offset) for offset in range(7)]
+        tracked = [
+            self.start_counts_by_day[day.isoformat()]
+            for day in days
+            if day.isoformat() in self.start_counts_by_day
+        ]
         if not tracked:
             return None
         return sum(tracked) / len(tracked)
