@@ -6,7 +6,7 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
 from . import OvumConfigEntry
-from .const import CONF_LOGIN_CODE
+from .const import CONF_LOGIN_CODE, INTEGRATION_VERSION
 
 _TO_REDACT = {CONF_LOGIN_CODE}
 
@@ -25,7 +25,7 @@ async def async_get_config_entry_diagnostics(
     """Return a user-downloadable diagnostics/analysis export."""
     coordinator = entry.runtime_data.coordinator
     return {
-        "integration_version": "1.0.0",
+        "integration_version": INTEGRATION_VERSION,
         "entry_data": async_redact_data(dict(entry.data), _TO_REDACT),
         "entry_options": dict(entry.options),
         "energy": _energy_export(coordinator),
