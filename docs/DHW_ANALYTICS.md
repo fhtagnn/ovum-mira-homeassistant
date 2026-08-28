@@ -1,10 +1,24 @@
 # DHW analytics
 
-The OVUM WPM status code `HOT_WATER` is used as the authoritative signal for hot-water preparation.
+The OVUM WPM status code `HOT_WATER` is used as the authoritative signal for domestic-hot-water preparation.
 
 ## Last start
 
 A start event is created on a transition from any non-`HOT_WATER` state to `HOT_WATER`. The event timestamp and the primary DHW temperature at the start are stored persistently. A Home Assistant restart while DHW is already active does not create a false start event.
+
+## Heating-interval statistics
+
+The integration derives the interval between consecutive observed DHW heating starts. An interval is considered valid only when:
+
+- it is at least 2 hours and at most 72 hours long;
+- synchronized analysis history covers the full interval;
+- no history gap inside the interval exceeds 2 minutes.
+
+This intentionally rejects intervals where Home Assistant may have been offline long enough to miss an intermediate DHW start. Manual or unusual short recharges below 2 hours and very long exceptional gaps above 72 hours are also excluded.
+
+The latest 10 valid intervals are considered. Once at least 2 valid intervals are available, the arithmetic mean is exposed as the normal average-heating-interval sensor. The median is available as a diagnostic sensor and is disabled by default.
+
+These interval statistics are observational only; they do not change MIRA settings or trigger DHW preparation.
 
 ## Forecast
 
