@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any, override
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -14,8 +15,31 @@ from .history import HistoryBook
 from .ovum_mira_modbus import OvumMiraSystem
 
 _LOGGER = logging.getLogger(__name__)
-_STORAGE_VERSION = 1
+_STORAGE_VERSION = 2
 _SAVE_DELAY_SECONDS = 60
+
+
+class EnergyStore(Store[dict[str, Any]]):
+    """Persistent energy store with explicit public-beta migrations."""
+
+    def __init__(self, hass: HomeAssistant, key: str, history: HistoryBook) -> None:
+        super().__init__(hass, _STORAGE_VERSION, key)
+        self._history = history
+
+    @override
+    async def _async_migrate_func(
+        self,
+        old_major_version: int,
+        old_minor_version: int,
+        old_data: dict[str, Any],
+    ) -> dict[str, Any]:
+        if old_major_version == 1:
+            return EnergyBook.migrate_v1_storage(
+                old_data,
+                self._history.samples,
+                localize=dt_util.as_local,
+            )
+        raise NotImplementedError
 
 
 class OvumMiraCoordinator(DataUpdateCoordinator[None]):
@@ -34,10 +58,10 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
         self.energy = EnergyBook(unit_ids)
         self.history = HistoryBook(hass, entry_id)
         self.dhw_analytics = DhwAnalytics(hass, entry_id)
-        self._store: Store[dict] = Store(
+        self._store: Store[dict[str, Any]] = EnergyStore(
             hass,
-            _STORAGE_VERSION,
             f"{DOMAIN}.{entry_id}.energy",
+            self.history,
         )
 
     async def async_initialize(self) -> None:
@@ -62,6 +86,8 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
                 local_now=local_now,
                 electrical_kw=wpm.readings.electrical_power,
                 thermal_kw=wpm.readings.thermal_power,
+                status=wpm.readings.status,
+                compressor_runtime_minutes=wpm.readings.compressor_runtime_minutes,
             )
 
     def _update_derived_data(self) -> None:
@@ -74,6 +100,8 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
                 local_now=local_now,
                 electrical_kw=wpm.readings.electrical_power,
                 thermal_kw=wpm.readings.thermal_power,
+                status=wpm.readings.status,
+                compressor_runtime_minutes=wpm.readings.compressor_runtime_minutes,
             )
         self._store.async_delay_save(self.energy.as_storage_dict, _SAVE_DELAY_SECONDS)
         self.history.maybe_sample(self.system)
