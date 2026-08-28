@@ -2,7 +2,7 @@
 
 Community Home Assistant integration for OVUM heat pumps using the MIRA controller and Modbus TCP.
 
-> **Release status:** `v0.1.0-beta.1` is a public beta intended for testing by additional OVUM users before the first public stable release.
+> **Release status:** The `0.1.0` beta series is intended for testing by additional OVUM users before the first public stable release.
 
 ## Disclaimer
 
@@ -31,7 +31,9 @@ Other compatible MIRA 1.1.x systems may work, but should be treated as unverifie
 - Temperature, power, status, runtime, and diagnostic sensors
 - Derived electrical and thermal energy statistics
 - COP / work-factor monitoring
-- DHW start detection from WPM status
+- Operating-mode energy and work factors for domestic hot water and heating
+- Compressor cycling metrics and average completed-cycle runtime
+- DHW start detection, average heating interval, and diagnostic median interval
 - Transparent linear prediction of the next DHW heating start
 - Home Assistant diagnostics with synchronized analysis history
 - Safe change-only writes for persistent MIRA `P_*` parameters
@@ -93,9 +95,13 @@ MIRA parameter types prefixed with `P_` are persistent controller parameters. Th
 
 Write failures from Home Assistant entity actions are reported to the user rather than silently ignored.
 
-## Energy and COP
+## Energy, efficiency, and cycling
 
-The integration integrates reported electrical and thermal power over time to produce kWh sensors. It also provides instantaneous COP and accumulated work-factor values. Communication gaps are not backfilled using stale power values.
+The integration integrates reported electrical and thermal power over time to produce kWh sensors. It also provides instantaneous COP and accumulated work-factor values. Communication gaps longer than two minutes are not backfilled using stale power values.
+
+Energy is additionally classified into domestic-hot-water, heating, cooling, and unclassified/other buckets from WPM operating-state transitions. Domestic-hot-water and heating mode-energy/work-factor sensors are enabled by default. Cooling metrics are initially disabled by default; ambiguous or unreconstructable energy stays explicitly unclassified rather than being guessed.
+
+Compressor starts are derived conservatively from observed inactive-to-active state transitions. Internal active-state changes, including normal defrost within one run, do not count as new starts. A Home Assistant restart while the compressor is already active establishes a baseline and does not invent a start.
 
 Thermal power reported by MIRA is not a calibrated heat meter, so derived thermal energy and work-factor values are suitable for monitoring and optimization rather than billing.
 
@@ -103,9 +109,11 @@ Thermal power reported by MIRA is not a calibrated heat meter, so derived therma
 
 A DHW heating start is detected when a WPM enters the MIRA `HOT_WATER` status. The integration stores recent observed start temperatures and estimates the typical trigger temperature.
 
-While DHW heating is inactive, it calculates the current cooling slope from recent synchronized temperature samples and linearly extrapolates when the observed trigger temperature will be reached. This produces a transparent estimate of the next DHW heating start and can help evaluate circulation-pump behavior.
+It also derives the average interval between recent valid DHW starts. Intervals below 2 hours, above 72 hours, or crossing an analysis-history gap longer than 2 minutes are excluded. The normal sensor uses the arithmetic mean of up to 10 valid intervals; a median interval is available as a diagnostic entity.
 
-The prediction is informational only and is not used to control the heat pump.
+While DHW heating is inactive, the integration calculates the current cooling slope from recent synchronized temperature samples and linearly extrapolates when the observed trigger temperature will be reached. This produces a transparent estimate of the next DHW heating start and can help evaluate circulation-pump behavior.
+
+The analytics are informational only and are not used to control the heat pump.
 
 ## Diagnostics and privacy
 
