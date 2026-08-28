@@ -13,6 +13,7 @@ from custom_components.ovum_mira.dhw_analytics import DhwAnalytics
 from custom_components.ovum_mira.energy import EnergyBook
 from custom_components.ovum_mira.entity import OvumMiraEntity
 from custom_components.ovum_mira.history import HistoryBook
+from custom_components.ovum_mira.ovum_mira_modbus import WpmStatus
 from custom_components.ovum_mira.sensor import (
     OvumSystemEnergySensor,
     OvumWpmEnergySensor,
@@ -30,24 +31,26 @@ def _wpm_system():
                 readings=SimpleNamespace(
                     electrical_power=0.0,
                     thermal_power=0.0,
+                    status=WpmStatus.READY,
+                    compressor_runtime_minutes=0,
                 )
             )
         ]
     )
 
 
-def test_public_beta_storage_keys_and_versions_are_stable(hass):
+def test_public_beta_storage_keys_and_versions_are_explicit(hass):
     coordinator = OvumMiraCoordinator(hass, _wpm_system(), ENTRY_ID)
 
     assert coordinator._store.key == f"ovum_mira.{ENTRY_ID}.energy"
-    assert coordinator._store.version == 1
+    assert coordinator._store.version == 2
     assert coordinator.history._store.key == f"ovum_mira.{ENTRY_ID}.analysis_history"
     assert coordinator.history._store.version == 1
     assert coordinator.dhw_analytics._store.key == f"ovum_mira.{ENTRY_ID}.dhw_analytics"
     assert coordinator.dhw_analytics._store.version == 1
 
 
-async def test_public_beta_energy_store_loads_without_reset(hass):
+async def test_public_beta_energy_store_v1_migrates_without_reset(hass):
     stored = {
         "units": {
             "111": {
@@ -82,6 +85,10 @@ async def test_public_beta_energy_store_loads_without_reset(hass):
     assert energy.total_thermal_kwh == 456.7
     assert energy.daily_electrical_kwh == 4.5
     assert energy.weekly_thermal_kwh == 98.1
+    # With no usable analysis history, the v1 authoritative totals are retained
+    # in the unclassified bucket rather than guessed into a useful operating mode.
+    assert energy.modes["other"].total_electrical_kwh == 123.4
+    assert energy.modes["other"].total_thermal_kwh == 456.7
 
 
 async def test_public_beta_history_store_loads_existing_samples(hass):
