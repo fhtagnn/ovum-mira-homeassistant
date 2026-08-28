@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import OvumConfigEntry
 from .const import FIRST_WPM_UNIT
+from .energy import MODE_COOLING, MODE_HEATING, MODE_HOT_WATER, MODE_OTHER
 from .entity import OvumMiraEntity, OvumWpmEntity
 from .ovum_mira_modbus import WpmStatus
 
@@ -110,6 +111,27 @@ class OvumSystemEnergySensor(OvumMiraEntity, SensorEntity):
         return round(value, 4) if isinstance(value, float) else value
 
 
+class OvumModeEnergySensor(OvumMiraEntity, SensorEntity):
+    """Installation-wide energy statistics for one operating mode."""
+
+    def __init__(self, coordinator, entry_id: str, mode: str, desc: SensorDef) -> None:
+        super().__init__(coordinator, entry_id, desc.key)
+        self.mode = mode
+        self.desc = desc
+        self._attr_translation_key = desc.translation_key or desc.key
+        self._attr_device_class = desc.device_class
+        self._attr_native_unit_of_measurement = desc.unit
+        self._attr_state_class = desc.state_class
+        self._attr_entity_registry_enabled_default = desc.entity_registry_enabled_default
+        self._attr_entity_category = desc.entity_category
+        self._attr_suggested_display_precision = 2
+
+    @property
+    def native_value(self):
+        value = self.desc.value(self.coordinator.energy.aggregate_mode(self.mode))
+        return round(value, 4) if isinstance(value, float) else value
+
+
 class OvumDhwAnalyticsSensor(OvumMiraEntity, SensorEntity):
     """Derived DHW analysis sensor backed by coordinator analytics."""
 
@@ -122,7 +144,10 @@ class OvumDhwAnalyticsSensor(OvumMiraEntity, SensorEntity):
         self._attr_state_class = desc.state_class
         self._attr_entity_registry_enabled_default = desc.entity_registry_enabled_default
         self._attr_entity_category = desc.entity_category
-        self._attr_suggested_display_precision = 3 if desc.key == "dhw_temperature_slope" else None
+        if desc.key == "dhw_temperature_slope":
+            self._attr_suggested_display_precision = 3
+        elif desc.key in {"dhw_average_heating_interval", "dhw_median_heating_interval"}:
+            self._attr_suggested_display_precision = 2
 
     @property
     def native_value(self):
@@ -191,6 +216,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_a
                 entity_registry_enabled_default=False,
                 entity_category=EntityCategory.DIAGNOSTIC,
             ),
+            SensorDef(
+                key="dhw_average_heating_interval",
+                value=lambda a: a.average_heating_interval_hours,
+                device_class=SensorDeviceClass.DURATION,
+                unit=UnitOfTime.HOURS,
+                state_class=SensorStateClass.MEASUREMENT,
+            ),
+            SensorDef(
+                key="dhw_median_heating_interval",
+                value=lambda a: a.median_heating_interval_hours,
+                device_class=SensorDeviceClass.DURATION,
+                unit=UnitOfTime.HOURS,
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_registry_enabled_default=False,
+                entity_category=EntityCategory.DIAGNOSTIC,
+            ),
         ]
         entities.extend(OvumDhwAnalyticsSensor(coordinator, entry.entry_id, d) for d in analytics_defs)
     for number, circuit in ((1, system.hsm.heating_circuit_1), (2, system.hsm.heating_circuit_2)):
@@ -213,7 +254,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_a
         SensorDef(key="work_factor_today", value=lambda e: e.daily_work_factor, state_class=SensorStateClass.MEASUREMENT),
         SensorDef(key="work_factor_week", value=lambda e: e.weekly_work_factor, state_class=SensorStateClass.MEASUREMENT),
         SensorDef(key="work_factor_total", value=lambda e: e.total_work_factor, state_class=SensorStateClass.MEASUREMENT),
+        SensorDef(key="compressor_starts_today", value=lambda e: e.compressor_starts_today),
+        SensorDef(key="compressor_starts_week", value=lambda e: e.compressor_starts_week),
+        SensorDef(key="compressor_starts_average_7d", value=lambda e: e.average_starts_per_day_7d, state_class=SensorStateClass.MEASUREMENT),
+        SensorDef(key="compressor_average_cycle_runtime", value=lambda e: e.average_cycle_runtime_minutes, device_class=SensorDeviceClass.DURATION, unit=UnitOfTime.MINUTES, state_class=SensorStateClass.MEASUREMENT),
     ]
+
+    mode_defs = {
+        MODE_HOT_WATER: [
+            SensorDef(key="hot_water_electrical_energy", value=lambda e: e.total_electrical_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING),
+            SensorDef(key="hot_water_thermal_energy", value=lambda e: e.total_thermal_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING),
+            SensorDef(key="hot_water_work_factor", value=lambda e: e.total_work_factor, state_class=SensorStateClass.MEASUREMENT),
+        ],
+        MODE_HEATING: [
+            SensorDef(key="heating_electrical_energy", value=lambda e: e.total_electrical_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING),
+            SensorDef(key="heating_thermal_energy", value=lambda e: e.total_thermal_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING),
+            SensorDef(key="heating_work_factor", value=lambda e: e.total_work_factor, state_class=SensorStateClass.MEASUREMENT),
+        ],
+        MODE_COOLING: [
+            SensorDef(key="cooling_electrical_energy", value=lambda e: e.total_electrical_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING, entity_registry_enabled_default=False),
+            SensorDef(key="cooling_thermal_energy", value=lambda e: e.total_thermal_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING, entity_registry_enabled_default=False),
+            SensorDef(key="cooling_work_factor", value=lambda e: e.total_work_factor, state_class=SensorStateClass.MEASUREMENT, entity_registry_enabled_default=False),
+        ],
+        MODE_OTHER: [
+            SensorDef(key="other_electrical_energy", value=lambda e: e.total_electrical_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING),
+            SensorDef(key="other_thermal_energy", value=lambda e: e.total_thermal_kwh, device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR, state_class=SensorStateClass.TOTAL_INCREASING),
+        ],
+    }
+    for mode, definitions in mode_defs.items():
+        entities.extend(
+            OvumModeEnergySensor(coordinator, entry.entry_id, mode, definition)
+            for definition in definitions
+        )
 
     wpm_defs = [
         SensorDef(key="demand", value=lambda w: w.readings.demand_percent, unit=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT),
