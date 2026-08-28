@@ -24,6 +24,8 @@ _OBJECT_IDS = {
     "dhw_predicted_next_heating_start": "hot_water_predicted_next_heating_start",
     "dhw_temperature_slope": "hot_water_temperature_slope",
     "dhw_estimated_start_temperature": "hot_water_estimated_start_temperature",
+    "dhw_average_heating_interval": "hot_water_average_heating_interval",
+    "dhw_median_heating_interval": "hot_water_median_heating_interval",
     "dhw_pv_target": "pv_hot_water_target_temperature",
     "buffer_pv_target": "pv_heating_buffer_target_temperature",
     "hot_water_main_switch": "hot_water_main_switch",
