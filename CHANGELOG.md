@@ -2,10 +2,26 @@
 
 ## Unreleased
 
+Planned for `0.1.0-beta.2`.
+
+### Added
+- Operating-mode energy accounting for domestic hot water, heating, cooling, and an unclassified/other bucket.
+- Installation-wide domestic-hot-water and heating electrical energy, thermal energy, and work-factor sensors.
+- Cooling energy/work-factor sensors, disabled by default until more real installations have been validated.
+- Compressor cycling metrics: starts today, starts this week, rolling starts-per-day statistic, and average completed-cycle runtime.
+- Domestic-hot-water average heating interval plus a diagnostic median interval sensor.
+
 ### Changed
-- Added explicit upgrade/data-compatibility tests for config-entry data, internal storage, entity identity, and energy-statistics metadata.
-- Preserve accumulated energy data for temporarily unconfigured WPM units so reducing and later restoring the configured WPM count does not erase their stored totals.
-- Documented the supported in-place upgrade path and compatibility guarantees.
+- Energy storage schema moves from version 1 to version 2 with an explicit migration path.
+- Version-1 authoritative total, daily, and weekly energy counters remain unchanged during migration. Available analysis history is replayed to reconstruct operating-mode energy; any unreconstructable residual is assigned to the unclassified/other bucket.
+- Temporarily unconfigured WPM records continue to be retained in storage and are excluded from live aggregates until re-enabled.
+- Diagnostics now report the integration version consistently with the beta.2 code version.
+- Added and expanded upgrade/data-compatibility tests for storage migration, entity identity, and energy-statistics metadata.
+
+### Compatibility
+- Existing total energy entity unique IDs and long-term-statistics semantics are unchanged.
+- The config-entry schema remains version 5; this release changes only the integration-managed energy store schema.
+- No legacy Recorder or Powercalc statistics migration is performed.
 
 ## 0.1.0-beta.1
 
