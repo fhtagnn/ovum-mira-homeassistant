@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from statistics import median
+from statistics import mean, median
 from typing import Iterable
 
 from homeassistant.helpers.storage import Store
@@ -18,6 +18,11 @@ _MIN_SLOPE_SPAN = timedelta(minutes=45)
 _MIN_SLOPE_SAMPLES = 6
 _MIN_COOLING_SLOPE_C_PER_HOUR = -0.01
 _MAX_FORECAST = timedelta(hours=72)
+_MIN_HEATING_INTERVAL = timedelta(hours=2)
+_MAX_HEATING_INTERVAL = timedelta(hours=72)
+_MAX_INTERVAL_GAP = timedelta(minutes=2)
+_MAX_VALID_INTERVALS = 10
+_MIN_INTERVALS_FOR_STATISTICS = 2
 
 
 @dataclass(slots=True)
@@ -34,7 +39,6 @@ def _parse_timestamp(value: str) -> datetime | None:
 
 
 def linear_regression_slope_c_per_hour(points: Iterable[tuple[datetime, float]]) -> float | None:
-    """Return linear temperature slope in °C/hour for timestamped samples."""
     rows = list(points)
     if len(rows) < 2:
         return None
@@ -56,7 +60,6 @@ def predict_crossing_time(
     trigger_temperature_c: float,
     slope_c_per_hour: float,
 ) -> datetime | None:
-    """Linearly extrapolate when cooling reaches the learned DHW start temperature."""
     if slope_c_per_hour >= _MIN_COOLING_SLOPE_C_PER_HOUR:
         return None
     if current_temperature_c <= trigger_temperature_c:
@@ -71,7 +74,7 @@ def predict_crossing_time(
 
 
 class DhwAnalytics:
-    """Track DHW starts and derive a simple cooling-curve forecast."""
+    """Track DHW starts, cycle intervals, and a simple cooling-curve forecast."""
 
     def __init__(self, hass, entry_id: str) -> None:
         self._store: Store[dict] = Store(hass, _STORAGE_VERSION, f"{DOMAIN}.{entry_id}.dhw_analytics")
@@ -80,6 +83,10 @@ class DhwAnalytics:
         self.current_slope_c_per_hour: float | None = None
         self.predicted_next_start: datetime | None = None
         self.slope_samples_used: int = 0
+        self.average_heating_interval_hours: float | None = None
+        self.median_heating_interval_hours: float | None = None
+        self.valid_heating_intervals: int = 0
+        self._interval_cache_marker: tuple[str | None, str | None] | None = None
 
     @property
     def last_start(self) -> datetime | None:
@@ -118,7 +125,6 @@ class DhwAnalytics:
         self.start_events = loaded[-_MAX_START_EVENTS:]
 
     def initialize_live_state(self, system) -> None:
-        """Set the current status baseline without creating a false start on HA startup."""
         self._previous_hot_water_active = self._is_hot_water_active(system)
 
     def update(self, system, history) -> None:
@@ -140,7 +146,37 @@ class DhwAnalytics:
             self._store.async_delay_save(self.as_storage_dict, 5)
 
         self._previous_hot_water_active = active
+        self._update_interval_statistics(history)
         self._update_forecast(now, temperature, active, history)
+
+    def _update_interval_statistics(self, history) -> None:
+        event_marker = self.start_events[-1].timestamp_utc if self.start_events else None
+        history_marker = history.samples[-1].timestamp_utc if history.samples else None
+        marker = (event_marker, history_marker)
+        if marker == self._interval_cache_marker:
+            return
+        self._interval_cache_marker = marker
+        intervals: list[float] = []
+        events: list[datetime] = []
+        for event in self.start_events:
+            timestamp = _parse_timestamp(event.timestamp_utc)
+            if timestamp is not None:
+                events.append(timestamp)
+        for start, end in zip(events, events[1:], strict=False):
+            interval = end - start
+            if not (_MIN_HEATING_INTERVAL <= interval <= _MAX_HEATING_INTERVAL):
+                continue
+            if not _history_has_complete_coverage(history, start, end):
+                continue
+            intervals.append(interval.total_seconds() / 3600.0)
+        intervals = intervals[-_MAX_VALID_INTERVALS:]
+        self.valid_heating_intervals = len(intervals)
+        if len(intervals) < _MIN_INTERVALS_FOR_STATISTICS:
+            self.average_heating_interval_hours = None
+            self.median_heating_interval_hours = None
+            return
+        self.average_heating_interval_hours = float(mean(intervals))
+        self.median_heating_interval_hours = float(median(intervals))
 
     def _update_forecast(self, now: datetime, current_temperature, active: bool, history) -> None:
         self.current_slope_c_per_hour = None
@@ -158,7 +194,6 @@ class DhwAnalytics:
                 continue
             if sample.dhw_temperature_c is None:
                 continue
-            # Exclude samples while any WPM explicitly reports DHW preparation.
             if any(row.get("status") == "hot_water" for row in sample.wpm):
                 continue
             points.append((timestamp, float(sample.dhw_temperature_c)))
@@ -202,5 +237,28 @@ class DhwAnalytics:
             "current_slope_c_per_hour": self.current_slope_c_per_hour,
             "predicted_next_start_utc": self.predicted_next_start.isoformat() if self.predicted_next_start else None,
             "slope_samples_used": self.slope_samples_used,
+            "average_heating_interval_hours": self.average_heating_interval_hours,
+            "median_heating_interval_hours": self.median_heating_interval_hours,
+            "valid_heating_intervals": self.valid_heating_intervals,
             "start_events": self.as_storage_dict()["start_events"],
         }
+
+
+def _history_has_complete_coverage(history, start: datetime, end: datetime) -> bool:
+    timestamps: list[datetime] = []
+    for sample in history.samples:
+        timestamp = _parse_timestamp(sample.timestamp_utc)
+        if timestamp is None or timestamp < start or timestamp > end:
+            continue
+        timestamps.append(timestamp)
+    if not timestamps:
+        return False
+    timestamps.sort()
+    if timestamps[0] - start > _MAX_INTERVAL_GAP:
+        return False
+    if end - timestamps[-1] > _MAX_INTERVAL_GAP:
+        return False
+    return all(
+        later - earlier <= _MAX_INTERVAL_GAP
+        for earlier, later in zip(timestamps, timestamps[1:], strict=False)
+    )
