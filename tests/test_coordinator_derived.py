@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from custom_components.ovum_mira.coordinator import OvumMiraCoordinator
+from custom_components.ovum_mira.ovum_mira_modbus import WpmStatus
 
 
 def _wpm(electrical: float, thermal: float):
@@ -12,6 +13,8 @@ def _wpm(electrical: float, thermal: float):
         readings=SimpleNamespace(
             electrical_power=electrical,
             thermal_power=thermal,
+            status=WpmStatus.READY,
+            compressor_runtime_minutes=0,
         )
     )
 
@@ -63,6 +66,8 @@ def test_update_derived_data_integrates_and_schedules_all_derived_state(hass):
         local_now=start,
         electrical_kw=1.0,
         thermal_kw=4.0,
+        status=WpmStatus.READY,
+        compressor_runtime_minutes=0,
     )
     system.wpms[0].readings.electrical_power = 2.0
     system.wpms[0].readings.thermal_power = 6.0
