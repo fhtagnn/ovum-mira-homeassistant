@@ -1,15 +1,6 @@
 from datetime import datetime, timedelta, timezone
-import importlib.util
-import sys
-from pathlib import Path
 
-MODULE = Path(__file__).parents[1] / "custom_components" / "ovum_mira" / "energy.py"
-spec = importlib.util.spec_from_file_location("ovum_energy", MODULE)
-mod = importlib.util.module_from_spec(spec)
-assert spec.loader is not None
-sys.modules[spec.name] = mod
-spec.loader.exec_module(mod)
-EnergyAccumulator = mod.EnergyAccumulator
+from custom_components.ovum_mira.energy import EnergyAccumulator
 
 
 def test_one_hour_constant_power():
@@ -45,7 +36,7 @@ def test_daily_and_weekly_reset():
         day_key="2026-08-18",
         week_key="2026-W33",
     )
-    now = datetime(2026, 8, 24, 0, 1, tzinfo=timezone.utc)  # ISO week 35? key only needs change
+    now = datetime(2026, 8, 24, 0, 1, tzinfo=timezone.utc)
     acc.ensure_period(now)
     assert acc.daily_electrical_kwh == 0
     assert acc.daily_thermal_kwh == 0
