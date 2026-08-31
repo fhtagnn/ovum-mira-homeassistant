@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Planned for `0.1.0-beta.2`.
+## 0.1.0-beta.2 - 2026-08-31
 
 ### Added
 - Operating-mode energy accounting for domestic hot water, heating, cooling, and an unclassified/other bucket.
