@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, call
 
 from custom_components.ovum_mira.ovum_mira_modbus.diagnostics import (

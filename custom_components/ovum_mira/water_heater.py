@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from homeassistant.components.water_heater import STATE_HEAT_PUMP, WaterHeaterEntity, WaterHeaterEntityFeature
 from homeassistant.const import ATTR_TEMPERATURE, STATE_OFF, UnitOfTemperature
 from homeassistant.core import HomeAssistant

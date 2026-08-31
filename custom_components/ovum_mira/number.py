@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from homeassistant.components.number import NumberEntity
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant

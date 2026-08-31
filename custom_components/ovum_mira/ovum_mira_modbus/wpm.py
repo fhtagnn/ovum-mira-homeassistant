@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from modbus_connection.model import Component, enum, float32, int32, integer, string
 
 from .enums import WpmStatus

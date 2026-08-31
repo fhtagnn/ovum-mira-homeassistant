@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from modbus_connection.model import Component, ComponentGroup, enum, float32, int32, integer, string

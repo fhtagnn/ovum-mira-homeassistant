@@ -3,7 +3,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 line-length = 120
 exclude = ["custom_components/ovum_mira/ovum_mira_modbus"]
 

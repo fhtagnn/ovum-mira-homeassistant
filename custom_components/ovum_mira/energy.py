@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta
