@@ -11,6 +11,7 @@ from .const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
+    CONF_MIGRATE_LEGACY,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DEFAULT_PORT,
@@ -142,6 +143,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_DHW_SENSOR_COUNT: user_input.get(CONF_DHW_SENSOR_COUNT, 1),
                 CONF_HK1_ROOM_SENSOR: user_input.get(CONF_HK1_ROOM_SENSOR, False),
                 CONF_PV_SENSOR_MODULE: user_input.get(CONF_PV_SENSOR_MODULE, False),
+                CONF_MIGRATE_LEGACY: user_input.get(CONF_MIGRATE_LEGACY, False),
             }
             return self.async_create_entry(
                 title="OVUM MIRA",
@@ -157,6 +159,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._detected.get("hk1"):
             fields[vol.Required(CONF_HK1_ROOM_SENSOR, default=False)] = bool
         fields[vol.Required(CONF_PV_SENSOR_MODULE, default=False)] = bool
+        fields[vol.Required(CONF_MIGRATE_LEGACY, default=False)] = bool
         return self.async_show_form(step_id="installation", data_schema=vol.Schema(fields))
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> FlowResult:
@@ -265,6 +268,10 @@ class OvumMiraOptionsFlow(config_entries.OptionsFlowWithReload):
                 vol.Required(
                     CONF_PV_SENSOR_MODULE,
                     default=current.get(CONF_PV_SENSOR_MODULE, False),
+                ): bool,
+                vol.Required(
+                    CONF_MIGRATE_LEGACY,
+                    default=current.get(CONF_MIGRATE_LEGACY, False),
                 ): bool,
             }
         )

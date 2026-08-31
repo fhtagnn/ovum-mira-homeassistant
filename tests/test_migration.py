@@ -7,6 +7,7 @@ from custom_components.ovum_mira.const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
+    CONF_MIGRATE_LEGACY,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     CONF_WPM_UNIT,
@@ -21,7 +22,7 @@ async def test_migrate_v1_entry_preserves_connection_data_and_normalizes_schema(
             "port": 502,
             CONF_LOGIN_CODE: "1234",
             CONF_WPM_UNIT: 111,
-            "migrate_legacy": True,
+            CONF_MIGRATE_LEGACY: True,
             "custom_future_field": "keep-me",
         },
         options={},
@@ -41,7 +42,7 @@ async def test_migrate_v1_entry_preserves_connection_data_and_normalizes_schema(
     assert data[CONF_LOGIN_CODE] == "1234"
     assert data[CONF_WPM_COUNT] == 1
     assert CONF_WPM_UNIT not in data
-    assert "migrate_legacy" not in data
+    assert CONF_MIGRATE_LEGACY not in data
     assert data["custom_future_field"] == "keep-me"
     assert CONF_BUFFER_SENSOR_COUNT not in data
     assert CONF_DHW_SENSOR_COUNT not in data
@@ -52,6 +53,7 @@ async def test_migrate_v1_entry_preserves_connection_data_and_normalizes_schema(
         CONF_DHW_SENSOR_COUNT: 1,
         CONF_HK1_ROOM_SENSOR: False,
         CONF_PV_SENSOR_MODULE: False,
+        CONF_MIGRATE_LEGACY: True,
     }
 
 
@@ -94,6 +96,7 @@ async def test_migrate_v4_moves_installation_settings_to_options(hass):
         CONF_DHW_SENSOR_COUNT: 2,
         CONF_HK1_ROOM_SENSOR: True,
         CONF_PV_SENSOR_MODULE: False,
+        CONF_MIGRATE_LEGACY: False,
     }
 
 

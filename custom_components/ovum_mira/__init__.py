@@ -8,12 +8,14 @@ from .const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
+    CONF_MIGRATE_LEGACY,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     CONF_WPM_UNIT,
     PLATFORMS,
 )
 from .coordinator import OvumMiraCoordinator
+from .legacy_migration import LegacyMigrationManager
 from .ovum_mira_modbus import InstallationOptions
 from .runtime import OvumRuntime, async_open_system
 
@@ -40,7 +42,11 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data.pop(CONF_WPM_UNIT, None)
         data[CONF_WPM_COUNT] = 1
 
-    data.pop("migrate_legacy", None)
+    if CONF_MIGRATE_LEGACY not in options:
+        options[CONF_MIGRATE_LEGACY] = bool(
+            data.get(CONF_MIGRATE_LEGACY, False)
+        )
+    data.pop(CONF_MIGRATE_LEGACY, None)
 
     # Since schema v5, physical installation settings live in options rather
     # than connection data. Existing option values win over legacy data.
@@ -85,14 +91,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
         raise ConfigEntryNotReady(f"Unable to connect to OVUM MIRA: {err}") from err
 
     coordinator = OvumMiraCoordinator(hass, system, entry.entry_id)
+    legacy_migration = LegacyMigrationManager(
+        hass,
+        entry.entry_id,
+        coordinator,
+    )
     try:
         await coordinator.async_initialize()
+        await legacy_migration.async_initialize(
+            bool(cfg.get(CONF_MIGRATE_LEGACY, False))
+        )
     except Exception:
         await connection.close()
         raise
 
-    entry.runtime_data = OvumRuntime(connection, system, coordinator)
+    entry.runtime_data = OvumRuntime(
+        connection,
+        system,
+        coordinator,
+        legacy_migration,
+    )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    legacy_migration.async_start()
     return True
 
 
@@ -100,6 +120,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> boo
     """Unload OVUM MIRA and close the Modbus connection."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
+    if entry.runtime_data.legacy_migration is not None:
+        entry.runtime_data.legacy_migration.async_stop()
     await entry.runtime_data.coordinator.async_save_persistent_state()
     await entry.runtime_data.connection.close()
     return True

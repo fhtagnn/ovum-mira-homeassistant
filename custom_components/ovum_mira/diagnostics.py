@@ -22,6 +22,7 @@ async def async_get_config_entry_diagnostics(
 ) -> dict[str, Any]:
     """Return a user-downloadable diagnostics/analysis export."""
     coordinator = entry.runtime_data.coordinator
+    legacy_migration = getattr(entry.runtime_data, "legacy_migration", None)
     return {
         "integration_version": INTEGRATION_VERSION,
         "entry_data": async_redact_data(dict(entry.data), _TO_REDACT),
@@ -29,6 +30,11 @@ async def async_get_config_entry_diagnostics(
         "energy": _energy_export(coordinator),
         "dhw_analytics": coordinator.dhw_analytics.diagnostics(),
         "analysis_history": coordinator.history.export_dict(),
+        "legacy_migration": (
+            legacy_migration.diagnostics()
+            if legacy_migration is not None
+            else {"requested": False, "status": "not_available"}
+        ),
         "notes": {
             "history_purpose": "Compact synchronized samples for DHW-cycle and circulation analysis.",
             "history_is_independent_of_recorder": True,

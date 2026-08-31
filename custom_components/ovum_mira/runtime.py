@@ -12,6 +12,7 @@ class OvumRuntime:
     connection: ModbusConnection
     system: OvumMiraSystem
     coordinator: object | None = None
+    legacy_migration: object | None = None
 
 
 async def async_open_system(

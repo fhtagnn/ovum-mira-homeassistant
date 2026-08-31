@@ -36,6 +36,7 @@ Other compatible MIRA 1.1.x systems may work, but should be treated as unverifie
 - DHW start detection, average heating interval, and diagnostic median interval
 - Transparent linear prediction of the next DHW heating start
 - Home Assistant diagnostics with synchronized analysis history
+- Optional migration of legacy Modbus/Powercalc history to the new entity IDs
 - Safe change-only writes for persistent MIRA `P_*` parameters
 
 ## Installation
@@ -86,8 +87,22 @@ Physical installation details that cannot be inferred safely from register value
 - **Domestic-hot-water sensor count** — choose `1` or `2`. With one sensor, the MIRA `WW_ACTUALTEMPO` input is used as the primary DHW temperature; with two sensors, the additional lower-temperature value is exposed separately.
 - **Heating circuit 1 room sensor** — enable only when a real MIRA room-temperature sensor is installed. When enabled, Home Assistant can expose a room climate entity; without it, the circuit water temperature is not presented as room temperature.
 - **PV sensor module installed** — enable when the optional MIRA PV sensor module is physically present. PV parameter entities are still disabled by default and can be enabled individually when needed.
+- **Migrate legacy Modbus and Powercalc history** — enable while the old entities are still active if an earlier YAML/Powercalc setup should be replaced without disconnecting its Recorder history.
 
 Changing these installation options reloads the config entry but does not create a new one.
+
+## Migrating an existing YAML setup
+
+Take a Home Assistant backup before starting. Then use this order:
+
+1. Keep the old Modbus and Powercalc configuration active.
+2. Install or update OVUM MIRA and enable **Migrate legacy Modbus and Powercalc history** in the integration options.
+3. Restart Home Assistant once. The integration captures the existing electrical- and thermal-energy totals and reports `waiting_for_legacy_removal` in its diagnostics.
+4. Remove the old OVUM Modbus entities and the two associated Powercalc energy entities from YAML/configuration.
+5. Restart Home Assistant again. The migration now moves the old state history and long-term statistics to the language-independent OVUM MIRA entity IDs.
+6. Download OVUM MIRA diagnostics and verify that `legacy_migration.status` is `completed` before deleting any backup.
+
+The Recorder update runs as one atomic task. When an earlier failed attempt already created history on a target ID, ordinary state rows are merged. For long-term statistics, the old continuous statistic remains authoritative; the short overlapping target statistic is retained under an `ovum_archive_...` statistic ID instead of being discarded.
 
 ## Persistent parameter writes
 

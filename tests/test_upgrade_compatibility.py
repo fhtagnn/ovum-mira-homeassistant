@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import UnitOfEnergy
@@ -87,6 +87,29 @@ async def test_public_beta_energy_store_v1_migrates_without_reset(hass):
     # in the unclassified bucket rather than guessed into a useful operating mode.
     assert energy.modes["other"].total_electrical_kwh == 123.4
     assert energy.modes["other"].total_thermal_kwh == 456.7
+
+
+async def test_legacy_energy_import_only_raises_totals_and_keeps_mode_invariant(
+    hass,
+):
+    coordinator = OvumMiraCoordinator(hass, _wpm_system(), ENTRY_ID)
+    coordinator._store.async_save = AsyncMock()
+    energy = coordinator.energy.by_unit[111]
+    energy.total_electrical_kwh = 12.0
+    energy.modes["other"].total_electrical_kwh = 12.0
+
+    result = await coordinator.async_import_legacy_energy_totals(
+        electrical_kwh=11.6463,
+        thermal_kwh=26.4958,
+    )
+
+    assert energy.total_electrical_kwh == 12.0
+    assert energy.total_thermal_kwh == 26.4958
+    assert energy.modes["other"].total_electrical_kwh == 12.0
+    assert energy.modes["other"].total_thermal_kwh == 26.4958
+    assert result["electrical_imported_kwh"] == 0.0
+    assert result["thermal_imported_kwh"] == 26.4958
+    coordinator._store.async_save.assert_awaited_once()
 
 
 async def test_public_beta_history_store_loads_existing_samples(hass):

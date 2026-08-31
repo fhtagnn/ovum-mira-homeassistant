@@ -26,6 +26,7 @@ The integration uses these Home Assistant storage keys:
 ovum_mira.<entry_id>.energy
 ovum_mira.<entry_id>.analysis_history
 ovum_mira.<entry_id>.dhw_analytics
+ovum_mira.<entry_id>.legacy_migration
 ```
 
 For `0.1.0-beta.2`, the energy store uses major version `2`. Analysis history and DHW analytics remain on major version `1`.
@@ -70,7 +71,17 @@ Schema version 5 separates connection data from physical installation settings i
 
 `async_migrate_entry` updates older config-entry schemas in place. A version-4 entry is converted without changing its config-entry ID or unique ID, so existing internal stores and entity-registry associations remain attached. Existing option values take precedence over legacy copies in `data`, and unrelated future fields are preserved.
 
-Config-entry schema migrations are separate from Recorder/history migration. The integration does not import old Powercalc/helper statistics from earlier prototype setups.
+Config-entry schema migrations are separate from the optional legacy Recorder migration.
+
+## Legacy Modbus and Powercalc migration
+
+The migration is opt-in and intentionally requires two Home Assistant starts. Enable it while the legacy entities are still loaded so the integration can capture the current Powercalc electrical- and thermal-energy totals. Remove the legacy OVUM Modbus and Powercalc configuration only after diagnostics report `waiting_for_legacy_removal`, then restart again.
+
+The second start waits until no mapped legacy entity is active and performs all Recorder metadata changes in a single Recorder task. This prevents active target entities from recreating metadata between separate rename operations—the race which caused partial migrations in earlier internal prototypes.
+
+For normal state history, rows already recorded by the new target entity are merged into the legacy metadata record before that record receives the target entity ID. For long-term statistics, the legacy statistic remains authoritative so its accumulated sum continues. If the target already owns a short overlapping statistic, it is preserved under a unique `ovum_archive_...` statistic ID and the legacy statistic receives the canonical target ID. No Recorder rows are deleted by this migration.
+
+The migration covers 14 legacy Modbus entities and the two Powercalc energy entities. Five old numeric/helper entities are intentionally not mapped because their replacements use different semantic models (for example enum status, semantic selects, `water_heater`, or room climate entities).
 
 ## Safe update procedure
 

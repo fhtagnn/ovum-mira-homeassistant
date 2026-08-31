@@ -30,13 +30,15 @@
           "heating_buffer_sensor_count": "Number of heating-buffer sensors",
           "hot_water_sensor_count": "Number of domestic-hot-water sensors",
           "heating_circuit_1_room_sensor": "Room sensor installed for heating circuit 1",
-          "pv_sensor_module_installed": "PV sensor module installed"
+          "pv_sensor_module_installed": "PV sensor module installed",
+          "migrate_legacy": "Migrate legacy Modbus and Powercalc history"
         },
         "data_description": {
           "heating_buffer_sensor_count": "Select 1 or 2 according to the temperature sensors physically installed in the heating buffer.",
           "hot_water_sensor_count": "Select 1 or 2 according to the temperature sensors physically installed in the domestic-hot-water tank.",
           "heating_circuit_1_room_sensor": "Enable only when heating circuit 1 has a real room-temperature sensor connected to MIRA.",
-          "pv_sensor_module_installed": "Enable when the optional MIRA PV sensor module is installed. PV parameter entities remain disabled by default."
+          "pv_sensor_module_installed": "Enable when the optional MIRA PV sensor module is installed. PV parameter entities remain disabled by default.",
+          "migrate_legacy": "Enable before removing the old Modbus and Powercalc configuration. Energy totals are captured while the legacy entities are active; after they are removed and Home Assistant is restarted, Recorder history is moved to the new language-independent entity IDs."
         }
       },
       "reauth_confirm": {
@@ -75,13 +77,15 @@
           "heating_buffer_sensor_count": "Number of heating-buffer sensors",
           "hot_water_sensor_count": "Number of domestic-hot-water sensors",
           "heating_circuit_1_room_sensor": "Room sensor installed for heating circuit 1",
-          "pv_sensor_module_installed": "PV sensor module installed"
+          "pv_sensor_module_installed": "PV sensor module installed",
+          "migrate_legacy": "Migrate legacy Modbus and Powercalc history"
         },
         "data_description": {
           "heating_buffer_sensor_count": "Number of temperature sensors physically installed in the heating buffer.",
           "hot_water_sensor_count": "Number of temperature sensors physically installed in the domestic-hot-water tank.",
           "heating_circuit_1_room_sensor": "Whether heating circuit 1 has a real MIRA room-temperature sensor.",
-          "pv_sensor_module_installed": "Whether the optional MIRA PV sensor module is installed."
+          "pv_sensor_module_installed": "Whether the optional MIRA PV sensor module is installed.",
+          "migrate_legacy": "Enable while the legacy entities still exist. Remove their Modbus and Powercalc configuration, then restart Home Assistant to complete the history migration."
         }
       }
     }

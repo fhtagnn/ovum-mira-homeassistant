@@ -34,6 +34,10 @@ async def test_diagnostics_redacts_login_and_includes_analysis_history(hass):
     assert result["analysis_history"] == {
         "samples": [{"timestamp_utc": "2026-08-24T10:00:00+00:00"}]
     }
+    assert result["legacy_migration"] == {
+        "requested": False,
+        "status": "not_available",
+    }
     assert result["notes"]["history_is_independent_of_recorder"] is True
 
     accumulator.as_storage_dict.assert_called_once_with()

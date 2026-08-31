@@ -11,6 +11,7 @@ from custom_components.ovum_mira.const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
+    CONF_MIGRATE_LEGACY,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DOMAIN,
@@ -79,6 +80,7 @@ async def test_full_user_flow(hass):
                 CONF_DHW_SENSOR_COUNT: 2,
                 CONF_HK1_ROOM_SENSOR: True,
                 CONF_PV_SENSOR_MODULE: False,
+                CONF_MIGRATE_LEGACY: True,
             },
         )
         await hass.async_block_till_done()
@@ -96,6 +98,7 @@ async def test_full_user_flow(hass):
         CONF_DHW_SENSOR_COUNT: 2,
         CONF_HK1_ROOM_SENSOR: True,
         CONF_PV_SENSOR_MODULE: False,
+        CONF_MIGRATE_LEGACY: True,
     }
     assert result["result"].version == 5
     assert result["result"].unique_id == f"{HOST}:{PORT}"
@@ -179,7 +182,7 @@ async def test_installation_form_only_shows_detected_features(hass):
         result = await _submit_connection(hass, result["flow_id"])
 
     schema_keys = {key.schema for key in result["data_schema"].schema}
-    assert schema_keys == {CONF_PV_SENSOR_MODULE}
+    assert schema_keys == {CONF_PV_SENSOR_MODULE, CONF_MIGRATE_LEGACY}
 
 
 async def test_options_flow(hass):
@@ -196,6 +199,7 @@ async def test_options_flow(hass):
             CONF_DHW_SENSOR_COUNT: 1,
             CONF_HK1_ROOM_SENSOR: False,
             CONF_PV_SENSOR_MODULE: False,
+            CONF_MIGRATE_LEGACY: False,
         },
     )
     entry.add_to_hass(hass)
@@ -212,12 +216,14 @@ async def test_options_flow(hass):
                 CONF_DHW_SENSOR_COUNT: 2,
                 CONF_HK1_ROOM_SENSOR: True,
                 CONF_PV_SENSOR_MODULE: True,
+                CONF_MIGRATE_LEGACY: True,
             },
         )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_BUFFER_SENSOR_COUNT] == 2
     assert entry.options[CONF_DHW_SENSOR_COUNT] == 2
+    assert entry.options[CONF_MIGRATE_LEGACY] is True
     assert entry.options[CONF_HK1_ROOM_SENSOR] is True
     assert entry.options[CONF_PV_SENSOR_MODULE] is True
     schedule_reload.assert_called_once_with(entry.entry_id)

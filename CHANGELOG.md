@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+- Opt-in two-restart migration for 14 legacy OVUM Modbus entities and two Powercalc energy entities.
+- Persistent migration diagnostics, including active legacy sources, energy-total imports, per-entity Recorder actions, and archived duplicate statistic IDs.
+
+### Changed
+- Recorder state-history migration now runs atomically in the Recorder queue. Existing target state rows are merged, while continuous legacy statistics keep their metadata and overlapping target statistics are retained under unique archive IDs.
+- Legacy `migrate_legacy` config-entry data is preserved as an option during schema migration instead of being discarded.
+
 ## 0.1.0-beta.2 - 2026-08-31
 
 ### Added

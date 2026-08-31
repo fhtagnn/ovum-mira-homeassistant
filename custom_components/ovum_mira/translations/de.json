@@ -19,7 +19,11 @@
           "heating_buffer_sensor_count": "Anzahl Fühler im Heizungspuffer",
           "hot_water_sensor_count": "Anzahl Fühler im Warmwasserspeicher",
           "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert",
-          "pv_sensor_module_installed": "PV-Sensormodul installiert"
+          "pv_sensor_module_installed": "PV-Sensormodul installiert",
+          "migrate_legacy": "Verlauf alter Modbus- und Powercalc-Entitäten migrieren"
+        },
+        "data_description": {
+          "migrate_legacy": "Aktivieren, solange die alten Entitäten noch vorhanden sind. Danach die bisherige Modbus- und Powercalc-Konfiguration entfernen und Home Assistant neu starten. Beim Neustart wird der Verlauf auf die neuen sprachunabhängigen Entity-IDs übertragen."
         }
       },
       "reauth_confirm": {
@@ -54,7 +58,11 @@
           "heating_buffer_sensor_count": "Anzahl Fühler im Heizungspuffer",
           "hot_water_sensor_count": "Anzahl Fühler im Warmwasserspeicher",
           "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert",
-          "pv_sensor_module_installed": "PV-Sensormodul installiert"
+          "pv_sensor_module_installed": "PV-Sensormodul installiert",
+          "migrate_legacy": "Verlauf alter Modbus- und Powercalc-Entitäten migrieren"
+        },
+        "data_description": {
+          "migrate_legacy": "Aktivieren, solange die alten Entitäten noch vorhanden sind. Danach deren Modbus- und Powercalc-Konfiguration entfernen und Home Assistant neu starten, um die Migration abzuschließen."
         }
       }
     }

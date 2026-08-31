@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -12,6 +12,7 @@ from custom_components.ovum_mira.const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
+    CONF_MIGRATE_LEGACY,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DOMAIN,
@@ -50,6 +51,7 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass):
             CONF_DHW_SENSOR_COUNT: 2,
             CONF_HK1_ROOM_SENSOR: True,
             CONF_PV_SENSOR_MODULE: True,
+            CONF_MIGRATE_LEGACY: True,
         }
     )
     entry.add_to_hass(hass)
@@ -62,10 +64,19 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass):
     )
     opener = AsyncMock(return_value=(connection, system))
     forward = AsyncMock()
+    legacy_migration = SimpleNamespace(
+        async_initialize=AsyncMock(),
+        async_start=MagicMock(),
+        async_stop=MagicMock(),
+    )
 
     with (
         patch("custom_components.ovum_mira.async_open_system", new=opener),
         patch("custom_components.ovum_mira.OvumMiraCoordinator", return_value=coordinator) as coordinator_cls,
+        patch(
+            "custom_components.ovum_mira.LegacyMigrationManager",
+            return_value=legacy_migration,
+        ),
         patch.object(hass.config_entries, "async_forward_entry_setups", new=forward),
     ):
         assert await async_setup_entry(hass, entry) is True
@@ -85,10 +96,13 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass):
     )
     coordinator_cls.assert_called_once_with(hass, system, entry.entry_id)
     coordinator.async_initialize.assert_awaited_once_with()
+    legacy_migration.async_initialize.assert_awaited_once_with(True)
     forward.assert_awaited_once_with(entry, PLATFORMS)
+    legacy_migration.async_start.assert_called_once_with()
     assert entry.runtime_data.connection is connection
     assert entry.runtime_data.system is system
     assert entry.runtime_data.coordinator is coordinator
+    assert entry.runtime_data.legacy_migration is legacy_migration
 
 
 async def test_setup_entry_rejects_invalid_auth(hass):

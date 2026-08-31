@@ -8,7 +8,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, FIRST_WPM_UNIT
 from .dhw_analytics import DhwAnalytics
-from .energy import EnergyBook
+from .energy import MODE_OTHER, EnergyBook
 from .history import HistoryBook
 from .ovum_mira_modbus import OvumMiraSystem
 
@@ -87,6 +87,39 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
                 status=wpm.readings.status,
                 compressor_runtime_minutes=wpm.readings.compressor_runtime_minutes,
             )
+
+    async def async_import_legacy_energy_totals(
+        self,
+        *,
+        electrical_kwh: float | None,
+        thermal_kwh: float | None,
+    ) -> dict[str, Any]:
+        """Raise first-WPM totals to legacy Powercalc readings without resets."""
+        accumulator = self.energy.by_unit[FIRST_WPM_UNIT]
+        imported: dict[str, Any] = {}
+        for energy_kind, legacy_value in (
+            ("electrical", electrical_kwh),
+            ("thermal", thermal_kwh),
+        ):
+            total_attr = f"total_{energy_kind}_kwh"
+            current = getattr(accumulator, total_attr)
+            imported[f"{energy_kind}_source_kwh"] = legacy_value
+            imported[f"{energy_kind}_before_kwh"] = current
+            if legacy_value is not None and legacy_value > current:
+                delta = legacy_value - current
+                setattr(accumulator, total_attr, legacy_value)
+                mode_attr = f"total_{energy_kind}_kwh"
+                other = accumulator.modes[MODE_OTHER]
+                setattr(other, mode_attr, getattr(other, mode_attr) + delta)
+                imported[f"{energy_kind}_imported_kwh"] = delta
+            else:
+                imported[f"{energy_kind}_imported_kwh"] = 0.0
+            imported[f"{energy_kind}_after_kwh"] = getattr(
+                accumulator,
+                total_attr,
+            )
+        await self._store.async_save(self.energy.as_storage_dict())
+        return imported
 
     def _update_derived_data(self) -> None:
         now_utc = dt_util.utcnow()
