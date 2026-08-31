@@ -1,6 +1,9 @@
 {
   "domain": "ovum_mira",
   "name": "OVUM MIRA",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@fhtagnn"
   ],
