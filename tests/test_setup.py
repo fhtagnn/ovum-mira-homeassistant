@@ -9,6 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.ovum_mira import async_setup_entry, async_unload_entry
 from custom_components.ovum_mira.const import (
     CONF_BUFFER_SENSOR_COUNT,
+    CONF_DHW_HOLIDAY_DETECTION,
+    CONF_DHW_HOLIDAY_THRESHOLD,
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
@@ -42,7 +44,16 @@ def _entry(*, options: dict | None = None) -> MockConfigEntry:
     return entry
 
 
-async def test_setup_entry_initializes_runtime_and_platforms(hass):
+@pytest.mark.parametrize(
+    ("holiday_options", "expected_threshold"),
+    [
+        ({}, None),
+        ({CONF_DHW_HOLIDAY_DETECTION: True}, 15.0),
+        ({CONF_DHW_HOLIDAY_DETECTION: True, CONF_DHW_HOLIDAY_THRESHOLD: 12.5}, 12.5),
+        ({CONF_DHW_HOLIDAY_DETECTION: False, CONF_DHW_HOLIDAY_THRESHOLD: 12.5}, None),
+    ],
+)
+async def test_setup_entry_initializes_runtime_and_platforms(hass, holiday_options, expected_threshold):
     """Set up runtime data with installation options and forward platforms."""
     entry = _entry(
         options={
@@ -50,6 +61,7 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass):
             CONF_DHW_SENSOR_COUNT: 2,
             CONF_HK1_ROOM_SENSOR: True,
             CONF_PV_SENSOR_MODULE: True,
+            **holiday_options,
         }
     )
     entry.add_to_hass(hass)
@@ -83,7 +95,9 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass):
             enable_ems_writes=False,
         ),
     )
-    coordinator_cls.assert_called_once_with(hass, system, entry.entry_id)
+    coordinator_cls.assert_called_once_with(
+        hass, system, entry.entry_id, dhw_holiday_target_threshold_c=expected_threshold
+    )
     coordinator.async_initialize.assert_awaited_once_with()
     forward.assert_awaited_once_with(entry, PLATFORMS)
     assert entry.runtime_data.connection is connection

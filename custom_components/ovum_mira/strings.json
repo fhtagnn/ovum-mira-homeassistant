@@ -70,18 +70,22 @@
     "step": {
       "init": {
         "title": "Change installation configuration",
-        "description": "Configure physical optional components and sensors.",
+        "description": "Configure optional components, sensors and local DHW analytics. Holiday detection is a heuristic, not a controller-reported status.",
         "data": {
           "heating_buffer_sensor_count": "Number of heating-buffer sensors",
           "hot_water_sensor_count": "Number of domestic-hot-water sensors",
           "heating_circuit_1_room_sensor": "Room sensor installed for heating circuit 1",
-          "pv_sensor_module_installed": "PV sensor module installed"
+          "pv_sensor_module_installed": "PV sensor module installed",
+          "dhw_holiday_detection_enabled": "Infer holiday mode from the DHW target",
+          "dhw_holiday_target_threshold": "Holiday-mode target threshold (°C)"
         },
         "data_description": {
           "heating_buffer_sensor_count": "Number of temperature sensors physically installed in the heating buffer.",
           "hot_water_sensor_count": "Number of temperature sensors physically installed in the domestic-hot-water tank.",
           "heating_circuit_1_room_sensor": "Whether heating circuit 1 has a real MIRA room-temperature sensor.",
-          "pv_sensor_module_installed": "Whether the optional MIRA PV sensor module is installed."
+          "pv_sensor_module_installed": "Whether the optional MIRA PV sensor module is installed.",
+          "dhw_holiday_detection_enabled": "Disabled by default. OVUM does not expose a holiday-mode register in the supported interface. When enabled, pause the next-start forecast while the effective DHW target is at or below the threshold. No controller settings are changed.",
+          "dhw_holiday_target_threshold": "Compares the effective target, not the measured tank temperature. Default suggestion: 15 °C (range 0–60 °C). Other low-target settings can also trigger this heuristic. The holiday end time cannot be predicted."
         }
       }
     }

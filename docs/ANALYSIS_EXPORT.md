@@ -18,6 +18,8 @@ The data can be downloaded using Home Assistant's standard **Download diagnostic
 
 This history is intentionally compact rather than a complete copy of the Home Assistant Recorder database. Its purpose is reproducible analysis of DHW charging and circulation effects and local prediction of the next DHW cycle.
 
+The `dhw_analytics` section additionally reports the current optional holiday-mode heuristic: `holiday_target_threshold_c`, `holiday_mode_inferred`, and `forecast_suppression_reason`. These describe the current inference, not historical controller-reported holiday states. The effective DHW target is already present in each history sample. See [DHW analytics](DHW_ANALYTICS.md#optional-holiday-mode-heuristic) for the comparison rules and limitations.
+
 ## Public-release privacy note
 
 Diagnostics are intended for troubleshooting, but users should review exports before posting them publicly. The integration excludes the Modbus login code; operational time series can still reveal household usage patterns.

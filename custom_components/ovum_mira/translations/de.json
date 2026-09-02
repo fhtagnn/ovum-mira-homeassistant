@@ -49,12 +49,18 @@
     "step": {
       "init": {
         "title": "Anlagenkonfiguration ändern",
-        "description": "Physische Zusatzkomponenten und Fühler konfigurieren.",
+        "description": "Zusatzkomponenten, Fühler und lokale Warmwasseranalyse konfigurieren. Die Urlaubserkennung ist eine Heuristik, kein vom Controller gemeldeter Zustand.",
         "data": {
           "heating_buffer_sensor_count": "Anzahl Fühler im Heizungspuffer",
           "hot_water_sensor_count": "Anzahl Fühler im Warmwasserspeicher",
           "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert",
-          "pv_sensor_module_installed": "PV-Sensormodul installiert"
+          "pv_sensor_module_installed": "PV-Sensormodul installiert",
+          "dhw_holiday_detection_enabled": "Urlaubsmodus anhand des Warmwassersollwerts erkennen",
+          "dhw_holiday_target_threshold": "Sollwert-Schwellwert für Urlaubsmodus (°C)"
+        },
+        "data_description": {
+          "dhw_holiday_detection_enabled": "Standardmäßig deaktiviert. OVUM stellt in der unterstützten Schnittstelle kein Register für den Urlaubsmodus bereit. Wenn aktiviert, pausiert die Startprognose bei einem wirksamen Warmwassersollwert kleiner oder gleich dem Schwellwert. Keine Anlagenparameter werden verändert.",
+          "dhw_holiday_target_threshold": "Verglichen wird der wirksame Sollwert, nicht die gemessene Speichertemperatur. Vorschlag: 15 °C (Bereich 0–60 °C). Andere Absenkungen können die Heuristik ebenfalls auslösen. Das Urlaubsende lässt sich nicht vorhersagen."
         }
       }
     }
