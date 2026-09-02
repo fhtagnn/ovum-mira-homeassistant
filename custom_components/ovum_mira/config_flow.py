@@ -8,11 +8,14 @@ import voluptuous as vol
 
 from .const import (
     CONF_BUFFER_SENSOR_COUNT,
+    CONF_DHW_HOLIDAY_DETECTION,
+    CONF_DHW_HOLIDAY_THRESHOLD,
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
+    DEFAULT_DHW_HOLIDAY_THRESHOLD,
     DEFAULT_PORT,
     DEFAULT_WPM_COUNT,
     DOMAIN,
@@ -242,7 +245,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OvumMiraOptionsFlow(config_entries.OptionsFlowWithReload):
-    """Allow physical installation details to be changed after setup."""
+    """Allow installation details and local analytics to be configured."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         current = {**self.config_entry.data, **self.config_entry.options}
@@ -266,6 +269,14 @@ class OvumMiraOptionsFlow(config_entries.OptionsFlowWithReload):
                     CONF_PV_SENSOR_MODULE,
                     default=current.get(CONF_PV_SENSOR_MODULE, False),
                 ): bool,
+                vol.Required(
+                    CONF_DHW_HOLIDAY_DETECTION,
+                    default=current.get(CONF_DHW_HOLIDAY_DETECTION, False),
+                ): bool,
+                vol.Required(
+                    CONF_DHW_HOLIDAY_THRESHOLD,
+                    default=current.get(CONF_DHW_HOLIDAY_THRESHOLD, DEFAULT_DHW_HOLIDAY_THRESHOLD),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=60)),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

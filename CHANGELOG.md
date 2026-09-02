@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+- Optional, configurable holiday-mode heuristic for the DHW next-start forecast. When enabled, an effective DHW target at or below the threshold pauses the prediction without changing controller settings or interrupting measurements and energy accounting.
+- English and German option descriptions and diagnostic attributes explaining the inferred status and forecast suppression reason.
+
+### Documentation
+- Explain that the supported OVUM Modbus interface does not expose holiday mode, including heuristic limitations, configuration and resumption behavior.
+- Restrict the real-device tested WPM environment to a single unit with Unit ID 111; multiple units and other WPM IDs remain unverified.
+
 ## 0.1.0-beta.2 - 2026-08-31
 
 ### Added

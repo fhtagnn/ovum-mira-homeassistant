@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from math import isfinite
 from statistics import mean, median
 from typing import Iterable
 
@@ -74,7 +75,7 @@ def predict_crossing_time(
 class DhwAnalytics:
     """Track DHW starts, cycle intervals, and a simple cooling-curve forecast."""
 
-    def __init__(self, hass, entry_id: str) -> None:
+    def __init__(self, hass, entry_id: str, *, holiday_target_threshold_c: float | None = None) -> None:
         self._store: Store[dict] = Store(hass, _STORAGE_VERSION, f"{DOMAIN}.{entry_id}.dhw_analytics")
         self.start_events: list[DhwStartEvent] = []
         self._previous_hot_water_active: bool | None = None
@@ -85,6 +86,9 @@ class DhwAnalytics:
         self.median_heating_interval_hours: float | None = None
         self.valid_heating_intervals: int = 0
         self._interval_cache_marker: tuple[str | None, str | None] | None = None
+        self.holiday_target_threshold_c = holiday_target_threshold_c
+        self.holiday_mode_inferred: bool | None = None
+        self.forecast_suppression_reason: str | None = None
 
     @property
     def last_start(self) -> datetime | None:
@@ -130,6 +134,8 @@ class DhwAnalytics:
         active = self._is_hot_water_active(system)
         hot_water = system.hsm.hot_water
         temperature = hot_water.readings.primary_temperature if hot_water is not None else None
+        effective_target = hot_water.readings.effective_target_temperature if hot_water is not None else None
+        self._update_holiday_inference(effective_target)
 
         if self._previous_hot_water_active is None:
             self._previous_hot_water_active = active
@@ -146,6 +152,19 @@ class DhwAnalytics:
         self._previous_hot_water_active = active
         self._update_interval_statistics(history)
         self._update_forecast(now, temperature, active, history)
+
+    def _update_holiday_inference(self, effective_target: float | None) -> None:
+        """Infer a low-target holiday mode, never a controller-reported status."""
+        self.holiday_mode_inferred = None
+        self.forecast_suppression_reason = None
+        if self.holiday_target_threshold_c is None:
+            return
+        if effective_target is None or not isfinite(effective_target):
+            self.forecast_suppression_reason = "effective_target_missing"
+            return
+        self.holiday_mode_inferred = effective_target <= self.holiday_target_threshold_c
+        if self.holiday_mode_inferred:
+            self.forecast_suppression_reason = "holiday_mode_inferred"
 
     def _update_interval_statistics(self, history) -> None:
         event_marker = self.start_events[-1].timestamp_utc if self.start_events else None
@@ -206,6 +225,8 @@ class DhwAnalytics:
             return
         self.current_slope_c_per_hour = slope
         self.slope_samples_used = len(points)
+        if self.forecast_suppression_reason is not None:
+            return
         self.predicted_next_start = predict_crossing_time(
             now=now,
             current_temperature_c=float(current_temperature),
@@ -235,6 +256,9 @@ class DhwAnalytics:
             "current_slope_c_per_hour": self.current_slope_c_per_hour,
             "predicted_next_start_utc": self.predicted_next_start.isoformat() if self.predicted_next_start else None,
             "slope_samples_used": self.slope_samples_used,
+            "holiday_target_threshold_c": self.holiday_target_threshold_c,
+            "holiday_mode_inferred": self.holiday_mode_inferred,
+            "forecast_suppression_reason": self.forecast_suppression_reason,
             "average_heating_interval_hours": self.average_heating_interval_hours,
             "median_heating_interval_hours": self.median_heating_interval_hours,
             "valid_heating_intervals": self.valid_heating_intervals,

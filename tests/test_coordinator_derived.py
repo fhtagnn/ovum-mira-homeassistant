@@ -17,6 +17,13 @@ def _wpm(electrical: float, thermal: float):
     )
 
 
+def test_coordinator_passes_holiday_threshold_to_analytics(hass):
+    coordinator = OvumMiraCoordinator(
+        hass, SimpleNamespace(wpms=[_wpm(0.0, 0.0)]), "entry-id", dhw_holiday_target_threshold_c=12.5
+    )
+    assert coordinator.dhw_analytics.holiday_target_threshold_c == 12.5
+
+
 async def test_initialize_energy_restores_counters_and_sets_live_baselines(hass):
     system = SimpleNamespace(wpms=[_wpm(1.0, 3.0), _wpm(2.0, 7.0)])
     coordinator = OvumMiraCoordinator(hass, system, "entry-id")

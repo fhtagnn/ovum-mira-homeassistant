@@ -43,7 +43,14 @@ class EnergyStore(Store[dict[str, Any]]):
 class OvumMiraCoordinator(DataUpdateCoordinator[None]):
     """Coordinate one pooled refresh for the whole MIRA installation."""
 
-    def __init__(self, hass: HomeAssistant, system: OvumMiraSystem, entry_id: str) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        system: OvumMiraSystem,
+        entry_id: str,
+        *,
+        dhw_holiday_target_threshold_c: float | None = None,
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
@@ -55,7 +62,9 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
         unit_ids = [FIRST_WPM_UNIT + index for index in range(len(system.wpms))]
         self.energy = EnergyBook(unit_ids)
         self.history = HistoryBook(hass, entry_id)
-        self.dhw_analytics = DhwAnalytics(hass, entry_id)
+        self.dhw_analytics = DhwAnalytics(
+            hass, entry_id, holiday_target_threshold_c=dhw_holiday_target_threshold_c
+        )
         self._store: Store[dict[str, Any]] = EnergyStore(
             hass,
             f"{DOMAIN}.{entry_id}.energy",

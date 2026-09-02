@@ -14,12 +14,12 @@ from custom_components.ovum_mira.history import HistorySample
 from custom_components.ovum_mira.ovum_mira_modbus import WpmStatus
 
 
-def _system(*, status: WpmStatus, temperature: float | None = 48.0):
+def _system(*, status: WpmStatus, temperature: float | None = 48.0, target: float | None = 50.0):
     return SimpleNamespace(
         wpms=[SimpleNamespace(readings=SimpleNamespace(status=status))],
         hsm=SimpleNamespace(
             hot_water=SimpleNamespace(
-                readings=SimpleNamespace(primary_temperature=temperature)
+                readings=SimpleNamespace(primary_temperature=temperature, effective_target_temperature=target)
             )
         ),
     )
@@ -255,3 +255,123 @@ async def test_explicit_save_persists_current_events(hass):
     await analytics.async_save()
 
     analytics._store.async_save.assert_awaited_once_with(analytics.as_storage_dict())
+
+
+@pytest.mark.parametrize(
+    ("threshold", "target", "inferred", "reason"),
+    [
+        (15.0, 10.0, True, "holiday_mode_inferred"),
+        (15.0, 15.0, True, "holiday_mode_inferred"),
+        (15.0, 15.1, False, None),
+        (15.0, 50.0, False, None),
+        (12.0, 13.0, False, None),
+        (20.0, 19.0, True, "holiday_mode_inferred"),
+        (None, 10.0, None, None),
+        (None, None, None, None),
+        (15.0, None, None, "effective_target_missing"),
+        (15.0, float("nan"), None, "effective_target_missing"),
+        (15.0, float("inf"), None, "effective_target_missing"),
+    ],
+)
+def test_holiday_heuristic_uses_effective_target_not_tank_temperature(hass, threshold, target, inferred, reason):
+    analytics = DhwAnalytics(hass, "entry-id", holiday_target_threshold_c=threshold)
+    # A cold tank must not itself imply holiday mode. With no guard, the model
+    # would predict "now" because this is below the learned 45 °C trigger.
+    system = _system(status=WpmStatus.READY, temperature=14.0, target=target)
+    now = datetime(2026, 8, 29, 13, 0, tzinfo=UTC)
+    analytics.start_events = [DhwStartEvent((now - timedelta(days=1)).isoformat(), 45.0)]
+    history = SimpleNamespace(samples=[
+        _history_sample(now - timedelta(minutes=60 - index * 10), 14.5 - index / 12)
+        for index in range(7)
+    ])
+
+    with patch("custom_components.ovum_mira.dhw_analytics.dt_util.utcnow", return_value=now):
+        analytics.update(system, history)
+
+    assert analytics.holiday_mode_inferred is inferred
+    assert analytics.forecast_suppression_reason == reason
+    assert analytics.predicted_next_start == (None if reason else now)
+    # The heuristic suppresses the forecast only, not cooling measurements.
+    assert analytics.current_slope_c_per_hour == pytest.approx(-0.5)
+    assert analytics.slope_samples_used == 7
+    assert len(analytics.start_events) == 1
+    diagnostics = analytics.diagnostics()
+    assert diagnostics["holiday_target_threshold_c"] == threshold
+    assert diagnostics["holiday_mode_inferred"] is inferred
+    assert diagnostics["forecast_suppression_reason"] == reason
+
+
+def test_holiday_entry_clears_stale_forecast_and_return_resumes_it(hass):
+    analytics = DhwAnalytics(hass, "entry-id", holiday_target_threshold_c=15.0)
+    system = _system(status=WpmStatus.READY, temperature=48.0)
+    now = datetime(2026, 8, 29, 13, 0, tzinfo=UTC)
+    analytics.start_events = [DhwStartEvent((now - timedelta(days=1)).isoformat(), 45.0)]
+    history = SimpleNamespace(samples=[
+        _history_sample(now - timedelta(minutes=60 - index * 10), 48.5 - index / 12)
+        for index in range(7)
+    ])
+
+    with patch("custom_components.ovum_mira.dhw_analytics.dt_util.utcnow", return_value=now):
+        analytics.update(system, history)
+        expected = analytics.predicted_next_start
+        assert expected == now + timedelta(hours=6)
+
+        system.hsm.hot_water.readings.effective_target_temperature = 10.0
+        analytics.update(system, history)
+        assert analytics.predicted_next_start is None
+        assert analytics.holiday_mode_inferred is True
+
+        system.hsm.hot_water.readings.effective_target_temperature = None
+        analytics.update(system, history)
+        assert analytics.predicted_next_start is None
+        assert analytics.holiday_mode_inferred is None
+        assert analytics.forecast_suppression_reason == "effective_target_missing"
+
+        system.hsm.hot_water.readings.effective_target_temperature = 50.0
+        analytics.update(system, history)
+        assert analytics.predicted_next_start == expected
+        assert analytics.holiday_mode_inferred is False
+        assert analytics.forecast_suppression_reason is None
+
+
+def test_holiday_heuristic_does_not_discard_real_start_events(hass):
+    analytics = DhwAnalytics(hass, "entry-id", holiday_target_threshold_c=15.0)
+    system = _system(status=WpmStatus.READY, target=10.0)
+    analytics.initialize_live_state(system)
+
+    with patch.object(analytics._store, "async_delay_save") as delay_save:
+        system.wpms[0].readings.status = WpmStatus.HOT_WATER
+        analytics.update(system, SimpleNamespace(samples=[]))
+        analytics.update(system, SimpleNamespace(samples=[]))
+
+    assert len(analytics.start_events) == 1
+    delay_save.assert_called_once()
+    assert analytics.holiday_mode_inferred is True
+    assert analytics.predicted_next_start is None
+
+
+async def test_restart_recomputes_holiday_inference_from_live_target(hass):
+    original = DhwAnalytics(hass, "entry-id", holiday_target_threshold_c=15.0)
+    original.start_events = [DhwStartEvent("2026-08-28T06:00:00+00:00", 45.0)]
+    original.holiday_mode_inferred = True
+    restored = DhwAnalytics(hass, "entry-id", holiday_target_threshold_c=15.0)
+    restored._store.async_load = AsyncMock(return_value=original.as_storage_dict())
+    await restored.async_load()
+    system = _system(status=WpmStatus.READY, target=50.0)
+    restored.initialize_live_state(system)
+    restored.update(system, SimpleNamespace(samples=[]))
+
+    assert restored.start_events == original.start_events
+    assert restored.holiday_mode_inferred is False
+    assert restored.forecast_suppression_reason is None
+
+
+def test_holiday_heuristic_without_hot_water_does_not_infer_a_status(hass):
+    analytics = DhwAnalytics(hass, "entry-id", holiday_target_threshold_c=15.0)
+    system = _system(status=WpmStatus.READY)
+    system.hsm.hot_water = None
+    analytics.update(system, SimpleNamespace(samples=[]))
+
+    assert analytics.holiday_mode_inferred is None
+    assert analytics.forecast_suppression_reason == "effective_target_missing"
+    assert analytics.predicted_next_start is None
