@@ -10,6 +10,9 @@
 - Explain that the supported OVUM Modbus interface does not expose holiday mode, including heuristic limitations, configuration and resumption behavior.
 - Restrict the real-device tested WPM environment to a single unit with Unit ID 111; multiple units and other WPM IDs remain unverified.
 
+### Fixed
+- Prevent PV target-temperature number entities without name placeholders from failing during entity registration.
+
 ## 0.1.0-beta.2 - 2026-08-31
 
 ### Added
