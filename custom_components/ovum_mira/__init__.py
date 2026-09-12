@@ -5,12 +5,15 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 from .const import (
     CONF_BUFFER_SENSOR_COUNT,
+    CONF_DHW_HOLIDAY_DETECTION,
+    CONF_DHW_HOLIDAY_THRESHOLD,
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
     CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     CONF_WPM_UNIT,
+    DEFAULT_DHW_HOLIDAY_THRESHOLD,
     PLATFORMS,
 )
 from .coordinator import OvumMiraCoordinator
@@ -84,7 +87,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
     except OSError as err:
         raise ConfigEntryNotReady(f"Unable to connect to OVUM MIRA: {err}") from err
 
-    coordinator = OvumMiraCoordinator(hass, system, entry.entry_id)
+    holiday_threshold = (
+        cfg.get(CONF_DHW_HOLIDAY_THRESHOLD, DEFAULT_DHW_HOLIDAY_THRESHOLD)
+        if cfg.get(CONF_DHW_HOLIDAY_DETECTION, False)
+        else None
+    )
+    coordinator = OvumMiraCoordinator(
+        hass, system, entry.entry_id, dhw_holiday_target_threshold_c=holiday_threshold
+    )
     try:
         await coordinator.async_initialize()
     except Exception:

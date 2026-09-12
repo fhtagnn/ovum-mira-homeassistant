@@ -16,9 +16,9 @@ The integration can change heat-pump settings. Review your installation and cont
 - MIRA 1.16
 - Modbus TCP
 - HSM Unit ID 110
-- WPM Unit IDs 111–118 (WPM 1 starts at 111)
+- One WPM unit, Unit ID 111
 
-Other compatible MIRA 1.1.x systems may work, but should be treated as unverified until reported by users.
+Other compatible MIRA 1.1.x systems may work, but should be treated as unverified until reported by users. Multiple WPM units and WPM Unit IDs other than 111 are supported by the configuration but have not been tested on real hardware.
 
 ## Features
 
@@ -114,6 +114,8 @@ It also derives the average interval between recent valid DHW starts. Intervals 
 While DHW heating is inactive, the integration calculates the current cooling slope from recent synchronized temperature samples and linearly extrapolates when the observed trigger temperature will be reached. This produces a transparent estimate of the next DHW heating start and can help evaluate circulation-pump behavior.
 
 The analytics are informational only and are not used to control the heat pump.
+
+An optional **holiday-mode heuristic** can pause the next-start forecast when the effective DHW target is at or below a user-configured threshold. OVUM does not expose a holiday-mode register in the supported interface, so this is an inferred condition, not a controller-reported status. Enable it in the integration's **Configure** options and adjust the suggested 15 °C threshold to your installation; detection is disabled by default. The comparison uses the effective target, not the actual tank temperature. Other setbacks can trigger it as well, and the end of holiday mode cannot be predicted. Forecasting resumes above the threshold when sufficient data is available; measurements, energy accounting and controller settings remain unaffected. See [DHW analytics](docs/DHW_ANALYTICS.md#optional-holiday-mode-heuristic) for configuration, examples and diagnostic attributes.
 
 ## Diagnostics and privacy
 

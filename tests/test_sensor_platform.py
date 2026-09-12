@@ -87,6 +87,9 @@ def _coordinator(system):
             current_slope_c_per_hour=-0.4,
             estimated_trigger_temperature_c=45.0,
             slope_samples_used=12,
+            holiday_target_threshold_c=15.0,
+            holiday_mode_inferred=True,
+            forecast_suppression_reason="holiday_mode_inferred",
         ),
     )
 
@@ -167,6 +170,9 @@ async def test_dhw_analytics_diagnostic_sensor_is_disabled_by_default():
         "estimated_start_temperature_c": 45.0,
         "samples_used": 12,
         "method": "linear_temperature_extrapolation",
+        "holiday_target_threshold_c": 15.0,
+        "holiday_mode_inferred": True,
+        "forecast_suppression_reason": "holiday_mode_inferred",
     }
 
 

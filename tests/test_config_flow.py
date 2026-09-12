@@ -1,6 +1,9 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import pytest
+import voluptuous as vol
+from voluptuous_serialize import convert
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.data_entry_flow import FlowResultType
@@ -8,6 +11,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ovum_mira.const import (
     CONF_BUFFER_SENSOR_COUNT,
+    CONF_DHW_HOLIDAY_DETECTION,
+    CONF_DHW_HOLIDAY_THRESHOLD,
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
@@ -203,6 +208,14 @@ async def test_options_flow(hass):
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
+    defaults = result["data_schema"]({})
+    assert defaults[CONF_DHW_HOLIDAY_DETECTION] is False
+    assert defaults[CONF_DHW_HOLIDAY_THRESHOLD] == 15.0
+    # The actual frontend must be able to serialize the options schema too.
+    fields = {field["name"]: field for field in convert(result["data_schema"])}
+    assert fields[CONF_DHW_HOLIDAY_THRESHOLD]["type"] == "float"
+    assert fields[CONF_DHW_HOLIDAY_THRESHOLD]["valueMin"] == 0
+    assert fields[CONF_DHW_HOLIDAY_THRESHOLD]["valueMax"] == 60
 
     with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
         result = await hass.config_entries.options.async_configure(
@@ -221,3 +234,36 @@ async def test_options_flow(hass):
     assert entry.options[CONF_HK1_ROOM_SENSOR] is True
     assert entry.options[CONF_PV_SENSOR_MODULE] is True
     schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+async def test_holiday_options_can_be_enabled_edited_and_disabled(hass):
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST, CONF_PORT: PORT}, version=5)
+    entry.add_to_hass(hass)
+
+    for enabled, threshold in [(True, 12.5), (True, 20.0), (False, 20.0)]:
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        values = result["data_schema"]({
+            CONF_DHW_HOLIDAY_DETECTION: enabled,
+            CONF_DHW_HOLIDAY_THRESHOLD: threshold,
+        })
+        with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+            result = await hass.config_entries.options.async_configure(result["flow_id"], values)
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert entry.options[CONF_DHW_HOLIDAY_DETECTION] is enabled
+        assert entry.options[CONF_DHW_HOLIDAY_THRESHOLD] == threshold
+        reload.assert_called_once_with(entry.entry_id)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    defaults = result["data_schema"]({})
+    assert defaults[CONF_DHW_HOLIDAY_DETECTION] is False
+    assert defaults[CONF_DHW_HOLIDAY_THRESHOLD] == 20.0
+
+
+@pytest.mark.parametrize("threshold", [-1, 61, "not-a-number", float("nan"), float("inf")])
+async def test_holiday_options_reject_invalid_thresholds(hass, threshold):
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST, CONF_PORT: PORT}, version=5)
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    with pytest.raises(vol.Invalid):
+        result["data_schema"]({CONF_DHW_HOLIDAY_THRESHOLD: threshold})
+    assert not entry.options

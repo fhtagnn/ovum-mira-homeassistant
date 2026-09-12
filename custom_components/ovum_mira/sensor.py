@@ -197,6 +197,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_a
                     "estimated_start_temperature_c": c.dhw_analytics.estimated_trigger_temperature_c,
                     "samples_used": c.dhw_analytics.slope_samples_used,
                     "method": "linear_temperature_extrapolation",
+                    "holiday_target_threshold_c": c.dhw_analytics.holiday_target_threshold_c,
+                    "holiday_mode_inferred": c.dhw_analytics.holiday_mode_inferred,
+                    "forecast_suppression_reason": c.dhw_analytics.forecast_suppression_reason,
                 },
             ),
             SensorDef(

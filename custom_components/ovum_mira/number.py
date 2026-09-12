@@ -31,7 +31,8 @@ class OvumTemperatureNumber(OvumMiraEntity, NumberEntity):
     ):
         super().__init__(coordinator, entry_id, key)
         self._attr_translation_key = translation_key
-        self._attr_translation_placeholders = translation_placeholders
+        if translation_placeholders is not None:
+            self._attr_translation_placeholders = translation_placeholders
         self._getter = getter
         self._setter = setter
         self._attr_native_min_value = low
