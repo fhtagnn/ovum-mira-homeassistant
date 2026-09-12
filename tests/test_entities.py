@@ -125,6 +125,7 @@ async def test_temperature_number_exposes_limits_and_writes_value():
     assert entity.native_min_value == 10
     assert entity.native_max_value == 30
     assert entity.native_step == 0.5
+    assert entity.translation_placeholders == {}
 
     await entity.async_set_native_value(22.5)
     setter.assert_awaited_once_with(system, 22.5)
