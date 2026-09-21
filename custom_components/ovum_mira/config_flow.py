@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+import logging
 from typing import Any
 
 from homeassistant import config_entries
@@ -25,6 +26,8 @@ from .const import (
 from .ovum_mira_modbus import BufferSystemType, HeatingCircuitType, InstallationOptions, SwitchState
 from .runtime import async_open_system
 
+
+_LOGGER = logging.getLogger(__name__)
 
 _LOGIN_CODE_SELECTOR = TextSelector(
     TextSelectorConfig(
@@ -83,9 +86,15 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 login_code=login_code,
                 options=_installation_options_for_entry(entry),
             )
-        except PermissionError:
+        except PermissionError as err:
+            _LOGGER.warning("OVUM MIRA login validation was rejected: %s", err)
             return {"base": "invalid_auth"}
-        except Exception:
+        except Exception as err:
+            _LOGGER.warning(
+                "OVUM MIRA connection validation failed: %s",
+                err,
+                exc_info=True,
+            )
             return {"base": "cannot_connect"}
 
         await connection.close()
@@ -113,9 +122,15 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         login_code=login_code,
                         options=InstallationOptions(),
                     )
-                except PermissionError:
+                except PermissionError as err:
+                    _LOGGER.warning("OVUM MIRA login validation was rejected: %s", err)
                     errors["base"] = "invalid_auth"
-                except Exception:
+                except Exception as err:
+                    _LOGGER.warning(
+                        "OVUM MIRA connection validation failed: %s",
+                        err,
+                        exc_info=True,
+                    )
                     errors["base"] = "cannot_connect"
                 else:
                     try:
