@@ -1,4 +1,5 @@
 import json
+import struct
 from pathlib import Path
 
 from custom_components.ovum_mira.const import INTEGRATION_VERSION
@@ -12,7 +13,23 @@ def _load_json(relative: str):
 
 def test_manifest_and_diagnostics_version_constant_match():
     manifest = _load_json("custom_components/ovum_mira/manifest.json")
-    assert manifest["version"] == INTEGRATION_VERSION == "0.1.0-beta.4"
+    assert manifest["version"] == INTEGRATION_VERSION == "0.1.0"
+
+
+def test_local_brand_images_have_expected_png_dimensions():
+    expected_dimensions = {
+        "icon.png": (256, 256),
+        "icon@2x.png": (512, 512),
+        "logo.png": (384, 256),
+        "logo@2x.png": (768, 512),
+    }
+
+    for filename, dimensions in expected_dimensions.items():
+        image = (ROOT / "custom_components/ovum_mira/brand" / filename).read_bytes()
+        assert image.startswith(b"\x89PNG\r\n\x1a\n")
+        assert image[12:16] == b"IHDR"
+        assert struct.unpack(">II", image[16:24]) == dimensions
+        assert image[25] == 6  # RGBA
 
 
 def test_english_translation_is_canonical_strings_copy():
