@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.0-beta.4 - 2026-09-21
+
+### Fixed
+- Authenticate each OVUM unit with one FC16 write to login registers 101/102 and verify only status register 100. The previous implementation incorrectly read the write payload back together with the status, causing real controllers with login enabled to report a connection error.
+- Include the failing Unit ID in login communication errors and retain the underlying exception in Home Assistant logs without logging the login code.
+
 ## 0.1.0-beta.3 - 2026-09-21
 
 ### Added

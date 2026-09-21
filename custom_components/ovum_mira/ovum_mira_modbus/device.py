@@ -1,9 +1,14 @@
 from collections.abc import Sequence
 
+from ..const import FIRST_WPM_UNIT, HSM_UNIT
 from .config import InstallationOptions
 from .hsm import OvumHsm
 from .login import login_and_verify
 from .wpm import OvumWpm
+
+
+class LoginConnectionError(OSError):
+    """Raised when communication fails during login for a specific unit."""
 
 
 class OvumMiraSystem:
@@ -25,9 +30,22 @@ class OvumMiraSystem:
 
     async def async_login(self, code: int) -> None:
         """Login separately to HSM and every WPM unit."""
-        await login_and_verify(self._hsm_unit, code)
-        for unit in self._wpm_units:
-            await login_and_verify(unit, code)
+        units = [(HSM_UNIT, self._hsm_unit)]
+        units.extend(
+            (FIRST_WPM_UNIT + index, unit)
+            for index, unit in enumerate(self._wpm_units)
+        )
+        for unit_id, unit in units:
+            try:
+                await login_and_verify(unit, code)
+            except PermissionError as err:
+                raise PermissionError(
+                    f"OVUM MIRA Modbus login rejected by Unit ID {unit_id}"
+                ) from err
+            except Exception as err:
+                raise LoginConnectionError(
+                    f"OVUM MIRA Modbus login communication failed for Unit ID {unit_id}"
+                ) from err
 
     async def async_setup(self) -> None:
         await self.hsm.async_setup()
