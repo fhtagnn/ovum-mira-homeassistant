@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.selector import TextSelector
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ovum_mira.const import (
@@ -154,6 +155,14 @@ async def test_reconfigure_success_updates_connection_and_unique_id(hass):
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
+    login_field, login_selector = next(
+        (key, value)
+        for key, value in result["data_schema"].schema.items()
+        if key.schema == CONF_LOGIN_CODE
+    )
+    assert isinstance(login_selector, TextSelector)
+    assert login_selector.config["type"] == "password"
+    assert login_field.description == {"suggested_value": "1234"}
 
     connection, system = _open_result()
     opener = AsyncMock(return_value=(connection, system))
@@ -169,6 +178,7 @@ async def test_reconfigure_success_updates_connection_and_unique_id(hass):
                 CONF_HOST: new_host,
                 CONF_PORT: new_port,
                 CONF_WPM_COUNT: 2,
+                CONF_LOGIN_CODE: "5678",
             },
         )
 
@@ -177,11 +187,11 @@ async def test_reconfigure_success_updates_connection_and_unique_id(hass):
     assert entry.data[CONF_HOST] == new_host
     assert entry.data[CONF_PORT] == new_port
     assert entry.data[CONF_WPM_COUNT] == 2
-    assert entry.data[CONF_LOGIN_CODE] == "1234"
+    assert entry.data[CONF_LOGIN_CODE] == "5678"
     assert entry.unique_id == f"{new_host}:{new_port}"
     connection.close.assert_awaited_once_with()
     assert opener.await_args.args == (new_host, new_port, 2)
-    assert opener.await_args.kwargs["login_code"] == 1234
+    assert opener.await_args.kwargs["login_code"] == 5678
     schedule_reload.assert_called_once_with(entry.entry_id)
 
 
@@ -219,6 +229,79 @@ async def test_reconfigure_connection_error_can_be_retried(hass):
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_WPM_COUNT] == 2
     assert opener.await_count == 2
+
+
+async def test_reconfigure_invalid_login_does_not_replace_working_configuration(hass):
+    entry = _entry(login="1234")
+    entry.add_to_hass(hass)
+    result = await _start_reconfigure(hass, entry)
+
+    with patch("custom_components.ovum_mira.config_flow.async_open_system") as opener:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_HOST: HOST,
+                CONF_PORT: PORT,
+                CONF_WPM_COUNT: 1,
+                CONF_LOGIN_CODE: "not-a-number",
+            },
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_LOGIN_CODE: "invalid_login_code"}
+    assert entry.data[CONF_LOGIN_CODE] == "1234"
+    opener.assert_not_called()
+
+
+async def test_reconfigure_rejected_login_does_not_replace_working_configuration(hass):
+    entry = _entry(login="1234")
+    entry.add_to_hass(hass)
+    result = await _start_reconfigure(hass, entry)
+
+    with patch(
+        "custom_components.ovum_mira.config_flow.async_open_system",
+        new=AsyncMock(side_effect=PermissionError("denied")),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_HOST: HOST,
+                CONF_PORT: PORT,
+                CONF_WPM_COUNT: 1,
+                CONF_LOGIN_CODE: "9999",
+            },
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+    assert entry.data[CONF_LOGIN_CODE] == "1234"
+
+
+async def test_reconfigure_can_disable_login(hass):
+    entry = _entry(login="1234")
+    entry.add_to_hass(hass)
+    result = await _start_reconfigure(hass, entry)
+    connection, system = _open_result()
+    opener = AsyncMock(return_value=(connection, system))
+
+    with (
+        patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener),
+        patch.object(hass.config_entries, "async_schedule_reload"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_HOST: HOST,
+                CONF_PORT: PORT,
+                CONF_WPM_COUNT: 1,
+                CONF_LOGIN_CODE: "",
+            },
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_LOGIN_CODE] == ""
+    assert opener.await_args.kwargs["login_code"] is None
 
 
 async def test_reconfigure_rejects_host_port_used_by_another_entry(hass):
