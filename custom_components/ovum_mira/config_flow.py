@@ -4,6 +4,7 @@ from typing import Any
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
 import voluptuous as vol
 
 from .const import (
@@ -23,6 +24,14 @@ from .const import (
 )
 from .ovum_mira_modbus import BufferSystemType, HeatingCircuitType, InstallationOptions, SwitchState
 from .runtime import async_open_system
+
+
+_LOGIN_CODE_SELECTOR = TextSelector(
+    TextSelectorConfig(
+        type=TextSelectorType.PASSWORD,
+        autocomplete="current-password",
+    )
+)
 
 
 def _installation_options_for_entry(entry: config_entries.ConfigEntry) -> InstallationOptions:
@@ -133,7 +142,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_WPM_COUNT, default=DEFAULT_WPM_COUNT): vol.In(
                     {count: str(count) for count in range(1, MAX_WPM_COUNT + 1)}
                 ),
-                vol.Optional(CONF_LOGIN_CODE, default=""): str,
+                vol.Optional(CONF_LOGIN_CODE, default=""): _LOGIN_CODE_SELECTOR,
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
@@ -190,7 +199,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema(
-                {vol.Optional(CONF_LOGIN_CODE, default=login_text): str}
+                {vol.Optional(CONF_LOGIN_CODE, default=login_text): _LOGIN_CODE_SELECTOR}
             ),
             errors=errors,
         )
@@ -204,7 +213,13 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host = user_input[CONF_HOST].strip()
             port = user_input[CONF_PORT]
             wpm_count = user_input[CONF_WPM_COUNT]
-            login_text = str(entry.data.get(CONF_LOGIN_CODE, "") or "").strip()
+            login_text = str(
+                user_input.get(
+                    CONF_LOGIN_CODE,
+                    entry.data.get(CONF_LOGIN_CODE, ""),
+                )
+                or ""
+            ).strip()
             errors = await self._async_test_entry_connection(
                 entry,
                 host=host,
@@ -224,6 +239,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_HOST: host,
                         CONF_PORT: port,
                         CONF_WPM_COUNT: wpm_count,
+                        CONF_LOGIN_CODE: login_text,
                     },
                 )
 
@@ -234,6 +250,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_WPM_COUNT): vol.In(
                     {count: str(count) for count in range(1, MAX_WPM_COUNT + 1)}
                 ),
+                vol.Optional(CONF_LOGIN_CODE): _LOGIN_CODE_SELECTOR,
             }
         )
         suggested_values = user_input or entry.data
