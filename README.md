@@ -1,8 +1,12 @@
 # OVUM MIRA for Home Assistant
 
+<p align="center">
+  <img src="custom_components/ovum_mira/brand/logo@2x.png" alt="OVUM MIRA integration logo" width="384">
+</p>
+
 Community Home Assistant integration for OVUM heat pumps using the MIRA controller and Modbus TCP.
 
-> **Release status:** The `0.1.0` beta series is intended for testing by additional OVUM users before the first public stable release.
+> **Release status:** `0.1.0` is the first stable release. Real-device validation currently covers the tested environment listed below.
 
 ## Disclaimer
 

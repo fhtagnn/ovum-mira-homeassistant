@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.1.0 - 2026-09-21
+
+### Added
+- Ship local Home Assistant icon and logo assets based on the louvered OVUM outdoor-unit design, including normal and high-DPI variants.
+
+### Changed
+- Promote the tested `0.1.0` beta series to the first stable release.
+
+### Validation
+- Confirm login-code authentication and restored Modbus write access on a real MIRA installation with HSM Unit ID 110 and one WPM at Unit ID 111.
+
 ## 0.1.0-beta.4 - 2026-09-21
 
 ### Fixed
