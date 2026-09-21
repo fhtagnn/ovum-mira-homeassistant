@@ -4,7 +4,10 @@ from unittest.mock import AsyncMock, call, patch
 import pytest
 
 from custom_components.ovum_mira.ovum_mira_modbus.config import InstallationOptions
-from custom_components.ovum_mira.ovum_mira_modbus.device import OvumMiraSystem
+from custom_components.ovum_mira.ovum_mira_modbus.device import (
+    LoginConnectionError,
+    OvumMiraSystem,
+)
 from custom_components.ovum_mira.ovum_mira_modbus.enums import (
     BufferSystemType,
     HeatingCircuitType,
@@ -47,40 +50,72 @@ def test_snap_step_rounds_to_controller_increment():
     assert snap_step(21.26, low=0, step=0.5) == 21.5
 
 
-async def test_login_and_verify_writes_fc16_component_and_accepts_status():
-    login = SimpleNamespace(
-        status=True,
-        write=AsyncMock(),
-        async_update=AsyncMock(),
+async def test_login_and_verify_writes_fc16_and_reads_only_status_register():
+    unit = SimpleNamespace(
+        write_registers=AsyncMock(),
+        read_holding_registers=AsyncMock(return_value=[1]),
     )
-    unit = object()
 
-    with patch(
-        "custom_components.ovum_mira.ovum_mira_modbus.login.Login",
-        return_value=login,
-    ) as login_class:
-        await login_and_verify(unit, 1234)
+    await login_and_verify(unit, 0x12345678)
 
-    login_class.assert_called_once_with(unit)
-    login.write.assert_awaited_once_with("code", 1234)
-    login.async_update.assert_awaited_once_with(notify=False)
+    unit.write_registers.assert_awaited_once_with(101, [0x1234, 0x5678])
+    unit.read_holding_registers.assert_awaited_once_with(100, 1)
 
 
 async def test_login_and_verify_rejects_failed_status():
-    login = SimpleNamespace(
-        status=False,
-        write=AsyncMock(),
-        async_update=AsyncMock(),
+    unit = SimpleNamespace(
+        write_registers=AsyncMock(),
+        read_holding_registers=AsyncMock(return_value=[0]),
     )
+
+    with pytest.raises(PermissionError, match="login rejected"):
+        await login_and_verify(unit, 9999)
+
+
+async def test_system_login_identifies_unit_with_communication_failure():
+    hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    wpm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
 
     with (
         patch(
-            "custom_components.ovum_mira.ovum_mira_modbus.login.Login",
-            return_value=login,
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumHsm",
+            return_value=hsm,
         ),
-        pytest.raises(PermissionError, match="login rejected"),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumWpm",
+            return_value=wpm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.login_and_verify",
+            new=AsyncMock(side_effect=[None, OSError("offline")]),
+        ),
     ):
-        await login_and_verify(object(), 9999)
+        system = OvumMiraSystem(object(), [object()])
+        with pytest.raises(LoginConnectionError, match="Unit ID 111"):
+            await system.async_login(1234)
+
+
+async def test_system_login_identifies_unit_rejecting_code():
+    hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    wpm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+
+    with (
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumHsm",
+            return_value=hsm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumWpm",
+            return_value=wpm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.login_and_verify",
+            new=AsyncMock(side_effect=PermissionError("rejected")),
+        ),
+    ):
+        system = OvumMiraSystem(object(), [object()])
+        with pytest.raises(PermissionError, match="Unit ID 110"):
+            await system.async_login(1234)
 
 
 async def test_wpm_setup_and_update_delegate_to_components():
