@@ -9,8 +9,13 @@ Security fixes are applied to the latest published release line.
 Please do not publish credentials, Modbus login codes, serial numbers, private
 network addresses, or full Home Assistant diagnostics in a public issue.
 
-Before the repository is published, replace the placeholder security contact in
-`RELEASE_SETUP.md` with the maintainer's preferred private contact method.
+Use GitHub's **Report a vulnerability** action on the repository's **Security**
+page when it is available. If that action is unavailable, open a public issue
+containing only the title **Private security contact requested** and no technical
+details. The maintainer will arrange a private follow-up channel.
+
+Ordinary integration bugs that contain no sensitive information should use the
+public bug-report form instead.
 
 ## Device-safety note
 

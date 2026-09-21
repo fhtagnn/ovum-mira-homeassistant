@@ -1,5 +1,10 @@
 # OVUM MIRA for Home Assistant
 
+[![Latest release](https://img.shields.io/github/v/release/fhtagnn/ovum-mira-homeassistant)](https://github.com/fhtagnn/ovum-mira-homeassistant/releases/latest)
+[![Tests](https://github.com/fhtagnn/ovum-mira-homeassistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/fhtagnn/ovum-mira-homeassistant/actions/workflows/tests.yml)
+[![Validate](https://github.com/fhtagnn/ovum-mira-homeassistant/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/fhtagnn/ovum-mira-homeassistant/actions/workflows/validate.yml)
+[![License](https://img.shields.io/github/license/fhtagnn/ovum-mira-homeassistant)](LICENSE)
+
 <p align="center">
   <img src="custom_components/ovum_mira/brand/logo@2x.png" alt="OVUM MIRA integration logo" width="384">
 </p>
@@ -46,9 +51,11 @@ Other compatible MIRA 1.1.x systems may work, but should be treated as unverifie
 
 ### HACS custom repository
 
+[![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fhtagnn&repository=ovum-mira-homeassistant&category=integration)
+
 Until the project is accepted into the HACS default list:
 
-1. Open HACS.
+1. Use the button above, or open HACS manually.
 2. Open **Custom repositories**.
 3. Add `https://github.com/fhtagnn/ovum-mira-homeassistant` as an **Integration**.
 4. Install **OVUM MIRA**.
@@ -124,6 +131,14 @@ An optional **holiday-mode heuristic** can pause the next-start forecast when th
 ## Diagnostics and privacy
 
 Home Assistant's standard diagnostics export contains controller state and a compact synchronized analysis history. Credentials such as the Modbus login code are excluded. Review diagnostics before sharing them publicly because they may still reveal details about your home's operation.
+
+## Support and feedback
+
+- Report reproducible problems with the [bug-report form](https://github.com/fhtagnn/ovum-mira-homeassistant/issues/new?template=bug_report.yml).
+- Propose new entities or controller features with the [feature-request form](https://github.com/fhtagnn/ovum-mira-homeassistant/issues/new?template=feature_request.yml).
+- Include the Home Assistant, integration, and MIRA versions as well as the affected Unit ID when known.
+- Never publish login codes, credentials, private network addresses, serial numbers, or unreviewed diagnostics.
+- Follow the [security policy](SECURITY.md) for a potentially sensitive vulnerability.
 
 ## Updating and removing the integration
 

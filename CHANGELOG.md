@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Documentation
+- Add a one-click HACS repository link, public support routes, and visible release/CI status badges for community users.
+- Update contributor, release, and private security-reporting instructions for the stable public repository.
+
 ## 0.1.0 - 2026-09-21
 
 ### Added
