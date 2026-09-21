@@ -12,7 +12,7 @@ def _load_json(relative: str):
 
 def test_manifest_and_diagnostics_version_constant_match():
     manifest = _load_json("custom_components/ovum_mira/manifest.json")
-    assert manifest["version"] == INTEGRATION_VERSION == "0.1.0-beta.2"
+    assert manifest["version"] == INTEGRATION_VERSION == "0.1.0-beta.3"
 
 
 def test_english_translation_is_canonical_strings_copy():
