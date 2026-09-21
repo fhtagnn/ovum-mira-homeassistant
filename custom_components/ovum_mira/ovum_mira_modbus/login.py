@@ -1,15 +1,15 @@
-from modbus_connection.model import Component, boolean, int32
+from modbus_connection.encode import encode_int32
 
 
-class Login(Component):
-    status = boolean(100)
-    # OVUM requires the 32-bit login code to be written in one FC16 transaction.
-    code = int32(101, writable=True, force_fc16=True)
+LOGIN_STATUS_REGISTER = 100
+LOGIN_CODE_REGISTER = 101
 
 
 async def login_and_verify(unit, code: int) -> None:
-    login = Login(unit)
-    await login.write("code", code)
-    await login.async_update(notify=False)
-    if login.status is not True:
+    """Authenticate one OVUM unit and verify only its login status register."""
+    # OVUM requires the 32-bit login code to be written in one FC16 transaction.
+    # Registers 101/102 are the write payload; only register 100 is read back.
+    await unit.write_registers(LOGIN_CODE_REGISTER, encode_int32(code))
+    (status,) = await unit.read_holding_registers(LOGIN_STATUS_REGISTER, 1)
+    if status != 1:
         raise PermissionError("OVUM MIRA Modbus login rejected")
