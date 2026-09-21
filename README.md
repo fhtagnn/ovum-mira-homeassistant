@@ -76,7 +76,7 @@ The initial setup asks for the values needed to reach the existing MIRA installa
 - **Number of WPM units** — number of installed WPM units from `1` to `8`. WPM 1 uses Unit ID 111 and additional WPMs use the following Unit IDs up to 118.
 - **Modbus login code** — optional numeric login configured on MIRA. Leave the field empty when Modbus login is disabled on the controller.
 
-The connection is tested before the config entry is created. Later changes to host, port, or WPM count should be made with Home Assistant's **Reconfigure** flow. When authentication fails, use the **Reauthenticate** flow to replace the login code. Both flows keep the existing config entry and therefore preserve the integration's data association.
+The connection is tested before the config entry is created. Later changes to host, port, WPM count, or the Modbus login code should be made with Home Assistant's **Reconfigure** flow. The stored code is shown as a masked field; an empty value is valid only when controller login is disabled. Home Assistant also offers **Reauthenticate** automatically after an authentication failure. Both flows validate the complete connection before saving and keep the existing config entry, preserving the integration's data association.
 
 ## Installation options
 
