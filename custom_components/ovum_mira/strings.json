@@ -47,16 +47,18 @@
       },
       "reconfigure": {
         "title": "Reconfigure OVUM MIRA connection",
-        "description": "Change the Modbus TCP endpoint or the number of WPM units. The new connection is verified before it is saved.",
+        "description": "Change the Modbus TCP endpoint, the number of WPM units or the login code. The complete connection is verified before it is saved.",
         "data": {
           "host": "Host / IP address",
           "port": "Port",
-          "wpm_count": "Number of WPM units"
+          "wpm_count": "Number of WPM units",
+          "login_code": "Modbus login code (leave empty if disabled)"
         },
         "data_description": {
           "host": "New hostname or IP address of the existing MIRA installation.",
           "port": "Modbus TCP port of the MIRA controller.",
-          "wpm_count": "Number of WPM units currently configured for this installation."
+          "wpm_count": "Number of WPM units currently configured for this installation.",
+          "login_code": "Numeric Modbus login code currently configured on MIRA. The stored value is shown masked. Leave empty only if controller login is disabled."
         }
       }
     },
