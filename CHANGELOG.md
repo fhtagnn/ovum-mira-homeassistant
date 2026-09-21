@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.3 - 2026-09-21
+
 ### Added
 - Optional, configurable holiday-mode heuristic for the DHW next-start forecast. When enabled, an effective DHW target at or below the threshold pauses the prediction without changing controller settings or interrupting measurements and energy accounting.
 - English and German option descriptions and diagnostic attributes explaining the inferred status and forecast suppression reason.

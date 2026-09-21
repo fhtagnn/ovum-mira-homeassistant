@@ -3,7 +3,7 @@ from datetime import timedelta
 from homeassistant.const import Platform
 
 DOMAIN = "ovum_mira"
-INTEGRATION_VERSION = "0.1.0-beta.2"
+INTEGRATION_VERSION = "0.1.0-beta.3"
 PLATFORMS = [
     Platform.SENSOR,
     Platform.SELECT,
