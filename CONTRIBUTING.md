@@ -14,18 +14,23 @@ Thanks for helping improve OVUM MIRA support for Home Assistant.
 
 ## Development
 
-Create a virtual environment and install the lightweight local test tools:
+Use Python 3.14, create a virtual environment, and install the same pinned test
+dependencies used by CI:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install pytest ruff
-python -m pytest
+python -m pip install --upgrade pip
+python -m pip install -r requirements-test.txt
+python -m compileall -q custom_components/ovum_mira
+python -m pytest -q --cov=custom_components.ovum_mira --cov-report=term-missing
 ruff check .
+python scripts_release_check.py
 ```
 
-For full Home Assistant integration tests, use a Home Assistant Core development
-environment and install the custom component into the test configuration.
+The repository tests use `pytest-homeassistant-custom-component`. For additional
+interactive testing, install the custom component in a separate Home Assistant
+test instance; do not develop against a production heat-pump installation.
 
 ## Pull requests
 
