@@ -34,6 +34,46 @@ class PvStatus(IntEnum):
     REDUCE = 2
 
 
+class DhwRequestStatus(IntEnum):
+    NONE = 0
+    PLUS = 1
+    PHOTOVOLTAIC = 2
+    LEGIONELLA = 3
+    NOMINAL = 4
+    TURBO = 5
+    FROST_PROTECTION = 6
+
+
+class FreshWaterDrawStatus(IntEnum):
+    NO_DRAW = 0
+    STANDBY_FLOW = 1
+    DRAW = 2
+
+
+class BufferLoadingStatus(IntEnum):
+    BELOW_FROST_PROTECTION = 0
+    BELOW_SWITCH_ON = 1
+    BELOW_TARGET = 2
+    ABOVE_TARGET = 3
+    ABOVE_SWITCH_OFF = 4
+    NOT_CONFIGURED = 5
+
+
+class CoolingBufferLoadingStatus(IntEnum):
+    ABOVE_SWITCH_OFF = 0
+    RESERVED = 1
+    BELOW_TARGET_PLUS_HYSTERESIS = 2
+    BELOW_TARGET = 3
+    BELOW_TARGET_MINUS_HYSTERESIS = 4
+    NOT_CONFIGURED = 5
+
+
+class HeatingCircuitTargetMode(IntEnum):
+    AUTOMATIC = 0
+    FIXED_HEATING = 1
+    FIXED_COOLING = 2
+
+
 class WpmStatus(IntEnum):
     FAULT = 0
     INVERTER_OFFLINE = 1

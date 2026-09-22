@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Add a complete typed protocol model for all documented Modbus Plus registers without enabling Plus polling or Home Assistant entities on Start-only installations.
+
 ### Documentation
 - Add a one-click HACS repository link, public support routes, and visible release/CI status badges for community users.
 - Update contributor, release, and private security-reporting instructions for the stable public repository.
