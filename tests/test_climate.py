@@ -15,10 +15,12 @@ def _coordinator(*, with_room: bool = True):
         async_set_room_target_heating=AsyncMock(),
     )
     circuit = SimpleNamespace(room_readings=room_readings, settings=settings)
+    system = SimpleNamespace(
+        hsm=SimpleNamespace(heating_circuit_1=circuit),
+        async_ensure_login=AsyncMock(),
+    )
     return SimpleNamespace(
-        system=SimpleNamespace(
-            hsm=SimpleNamespace(heating_circuit_1=circuit)
-        ),
+        system=system,
         last_update_success=True,
         async_request_refresh=AsyncMock(),
     )

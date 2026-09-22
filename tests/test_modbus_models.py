@@ -14,7 +14,10 @@ from custom_components.ovum_mira.ovum_mira_modbus.enums import (
     SwitchState,
 )
 from custom_components.ovum_mira.ovum_mira_modbus.hsm import OvumHsm
-from custom_components.ovum_mira.ovum_mira_modbus.login import login_and_verify
+from custom_components.ovum_mira.ovum_mira_modbus.login import (
+    is_login_granted,
+    login_and_verify,
+)
 from custom_components.ovum_mira.ovum_mira_modbus.validators import (
     range_validator,
     snap_step,
@@ -72,6 +75,19 @@ async def test_login_and_verify_rejects_failed_status():
         await login_and_verify(unit, 9999)
 
 
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [([1], True), ([0], False), ([], False), ([1, 0], False)],
+)
+async def test_login_status_reads_only_access_register(status, expected):
+    unit = SimpleNamespace(
+        read_holding_registers=AsyncMock(return_value=status),
+    )
+
+    assert await is_login_granted(unit) is expected
+    unit.read_holding_registers.assert_awaited_once_with(100, 1)
+
+
 async def test_system_login_identifies_unit_with_communication_failure():
     hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
     wpm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
@@ -116,6 +132,131 @@ async def test_system_login_identifies_unit_rejecting_code():
         system = OvumMiraSystem(object(), [object()])
         with pytest.raises(PermissionError, match="Unit ID 110"):
             await system.async_login(1234)
+
+
+async def test_system_runtime_login_check_skips_when_login_is_disabled():
+    hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    wpm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+
+    with (
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumHsm",
+            return_value=hsm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumWpm",
+            return_value=wpm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.is_login_granted",
+            new=AsyncMock(),
+        ) as granted,
+    ):
+        system = OvumMiraSystem(object(), [object()])
+        await system.async_ensure_login()
+
+    granted.assert_not_awaited()
+
+
+async def test_system_runtime_login_check_renews_only_expired_units():
+    hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    wpms = [
+        SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock()),
+        SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock()),
+    ]
+    hsm_unit = object()
+    wpm_units = [object(), object()]
+
+    with (
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumHsm",
+            return_value=hsm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumWpm",
+            side_effect=wpms,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.login_and_verify",
+            new=AsyncMock(),
+        ) as login,
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.is_login_granted",
+            new=AsyncMock(side_effect=[True, False, True]),
+        ) as granted,
+    ):
+        system = OvumMiraSystem(hsm_unit, wpm_units)
+        await system.async_login(1234)
+        login.reset_mock()
+
+        await system.async_ensure_login()
+
+    assert granted.await_args_list == [
+        call(hsm_unit),
+        call(wpm_units[0]),
+        call(wpm_units[1]),
+    ]
+    login.assert_awaited_once_with(wpm_units[0], 1234)
+
+
+async def test_system_runtime_login_rejection_identifies_unit():
+    hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    wpm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    hsm_unit = object()
+
+    with (
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumHsm",
+            return_value=hsm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumWpm",
+            return_value=wpm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.login_and_verify",
+            new=AsyncMock(),
+        ) as login,
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.is_login_granted",
+            new=AsyncMock(return_value=False),
+        ),
+    ):
+        system = OvumMiraSystem(hsm_unit, [object()])
+        await system.async_login(1234)
+        login.side_effect = PermissionError("rejected")
+
+        with pytest.raises(PermissionError, match="Unit ID 110"):
+            await system.async_ensure_login()
+
+
+async def test_system_runtime_login_status_failure_identifies_unit():
+    hsm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+    wpm = SimpleNamespace(async_setup=AsyncMock(), async_update=AsyncMock())
+
+    with (
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumHsm",
+            return_value=hsm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.OvumWpm",
+            return_value=wpm,
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.login_and_verify",
+            new=AsyncMock(),
+        ),
+        patch(
+            "custom_components.ovum_mira.ovum_mira_modbus.device.is_login_granted",
+            new=AsyncMock(side_effect=OSError("offline")),
+        ),
+    ):
+        system = OvumMiraSystem(object(), [object()])
+        await system.async_login(1234)
+
+        with pytest.raises(LoginConnectionError, match="Unit ID 110"):
+            await system.async_ensure_login()
 
 
 async def test_wpm_setup_and_update_delegate_to_components():

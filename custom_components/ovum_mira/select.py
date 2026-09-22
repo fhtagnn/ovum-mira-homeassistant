@@ -35,7 +35,7 @@ class HeatingCircuitModeSelect(OvumMiraEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         await self._async_write_action(
-            self._circuit.settings.async_set_mode(OPTION_TO_MODE[option])
+            lambda: self._circuit.settings.async_set_mode(OPTION_TO_MODE[option])
         )
 
 
