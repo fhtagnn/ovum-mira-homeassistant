@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Add a standalone, read-only-by-default probe for validating optional HSM registers before integration, including privacy-reviewed JSON snapshots and a normal/vacation/after-vacation test procedure.
+
 ### Documentation
 - Add a one-click HACS repository link, public support routes, and visible release/CI status badges for community users.
 - Update contributor, release, and private security-reporting instructions for the stable public repository.
