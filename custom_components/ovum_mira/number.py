@@ -46,7 +46,9 @@ class OvumTemperatureNumber(OvumMiraEntity, NumberEntity):
         return self._getter(self.coordinator.system)
 
     async def async_set_native_value(self, value: float) -> None:
-        await self._async_write_action(self._setter(self.coordinator.system, value))
+        await self._async_write_action(
+            lambda: self._setter(self.coordinator.system, value)
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:

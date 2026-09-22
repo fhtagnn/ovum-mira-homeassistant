@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Recheck the authenticated-access status of every configured OVUM unit immediately before controller writes. Expired sessions are renewed with the stored login code, and a rejected stored code starts Home Assistant's reauthentication flow.
+
 ### Documentation
 - Add a one-click HACS repository link, public support routes, and visible release/CI status badges for community users.
 - Update contributor, release, and private security-reporting instructions for the stable public repository.

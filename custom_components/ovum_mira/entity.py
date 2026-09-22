@@ -1,4 +1,4 @@
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from typing import Any, override
 
 from modbus_connection import ModbusError
@@ -67,10 +67,23 @@ class OvumMiraEntity(CoordinatorEntity[OvumMiraCoordinator]):
             self._ovum_suggested_object_id,
         )
 
-    async def _async_write_action(self, operation: Awaitable[Any]) -> None:
-        """Execute a device write and expose transport failures to the user."""
+    async def _async_write_action(
+        self, operation: Callable[[], Awaitable[Any]]
+    ) -> None:
+        """Renew write access, execute a write, and expose failures to the user."""
         try:
-            await operation
+            await self.coordinator.system.async_ensure_login()
+            await operation()
+        except PermissionError as err:
+            if entry := self.coordinator.hass.config_entries.async_get_entry(
+                self._entry_id
+            ):
+                entry.async_start_reauth(self.coordinator.hass)
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
         except (ModbusError, OSError, ValueError) as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

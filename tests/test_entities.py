@@ -14,6 +14,8 @@ from custom_components.ovum_mira.water_heater import OvumHotWater
 
 
 def _coordinator(system, *, available=True):
+    if not hasattr(system, "async_ensure_login"):
+        system.async_ensure_login = AsyncMock()
     return SimpleNamespace(
         system=system,
         last_update_success=available,
