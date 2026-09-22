@@ -153,6 +153,7 @@ Additional technical notes are included in:
 - [Energy and efficiency statistics](docs/ENERGY_STATISTICS.md)
 - [DHW analytics](docs/DHW_ANALYTICS.md)
 - [Analysis history and diagnostics export](docs/ANALYSIS_EXPORT.md)
+- [Standalone optional-register probe](docs/OPTIONAL_REGISTER_PROBE.md)
 - [Upgrade and data compatibility](docs/UPGRADES.md)
 - [Release setup notes](docs/RELEASE_SETUP.md)
 - [Contributing](CONTRIBUTING.md)
