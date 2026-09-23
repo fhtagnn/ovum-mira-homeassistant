@@ -18,8 +18,7 @@
         "data": {
           "heating_buffer_sensor_count": "Anzahl Fühler im Heizungspuffer",
           "hot_water_sensor_count": "Anzahl Fühler im Warmwasserspeicher",
-          "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert",
-          "pv_sensor_module_installed": "PV-Sensormodul installiert"
+          "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert"
         }
       },
       "reauth_confirm": {
@@ -61,7 +60,6 @@
           "heating_buffer_sensor_count": "Anzahl Fühler im Heizungspuffer",
           "hot_water_sensor_count": "Anzahl Fühler im Warmwasserspeicher",
           "heating_circuit_1_room_sensor": "Raumfühler für Heizkreis 1 installiert",
-          "pv_sensor_module_installed": "PV-Sensormodul installiert",
           "dhw_holiday_detection_enabled": "Urlaubsmodus anhand des Warmwassersollwerts erkennen",
           "dhw_holiday_target_threshold": "Sollwert-Schwellwert für Urlaubsmodus (°C)"
         },

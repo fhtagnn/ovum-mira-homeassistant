@@ -96,7 +96,6 @@ Physical installation details that cannot be inferred safely from register value
 - **Heating-buffer sensor count** — choose `1` or `2` according to the temperature sensors physically installed. The upper-buffer-temperature entity is exposed only for a two-sensor setup.
 - **Domestic-hot-water sensor count** — choose `1` or `2`. With one sensor, the MIRA `WW_ACTUALTEMPO` input is used as the primary DHW temperature; with two sensors, the additional lower-temperature value is exposed separately.
 - **Heating circuit 1 room sensor** — enable only when a real MIRA room-temperature sensor is installed. When enabled, Home Assistant can expose a room climate entity; without it, the circuit water temperature is not presented as room temperature.
-- **PV sensor module installed** — enable when the optional MIRA PV sensor module is physically present. PV parameter entities are still disabled by default and can be enabled individually when needed.
 
 Changing these installation options reloads the config entry but does not create a new one.
 

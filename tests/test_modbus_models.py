@@ -13,7 +13,7 @@ from custom_components.ovum_mira.ovum_mira_modbus.enums import (
     HeatingCircuitType,
     SwitchState,
 )
-from custom_components.ovum_mira.ovum_mira_modbus.hsm import OvumHsm
+from custom_components.ovum_mira.ovum_mira_modbus.hsm import EmsProcessValues, OvumHsm
 from custom_components.ovum_mira.ovum_mira_modbus.login import login_and_verify
 from custom_components.ovum_mira.ovum_mira_modbus.validators import (
     range_validator,
@@ -48,6 +48,18 @@ def test_range_validator_accepts_rejects_and_snaps():
 def test_snap_step_rounds_to_controller_increment():
     assert snap_step(21.24, low=0, step=0.5) == 21.0
     assert snap_step(21.26, low=0, step=0.5) == 21.5
+
+
+def test_ems_process_register_model_remains_available():
+    ems = EmsProcessValues(object())
+
+    assert set(ems.resolved_fields) == {
+        "pv_status",
+        "battery_soc",
+        "grid_power",
+        "inverter_power",
+        "requested_power",
+    }
 
 
 async def test_login_and_verify_writes_fc16_and_reads_only_status_register():
@@ -235,7 +247,6 @@ async def test_hsm_setup_builds_detected_subsystems_and_update_groups():
         heating_buffer_sensor_count=2,
         hot_water_sensor_count=2,
         heating_circuit_1_room_sensor=True,
-        enable_ems_writes=True,
     )
 
     with patch.multiple(
@@ -249,7 +260,6 @@ async def test_hsm_setup_builds_detected_subsystems_and_update_groups():
         HeatingCircuitReadings=factory("circuit_readings"),
         HeatingCircuitSettings=factory("circuit_settings"),
         HeatingCircuit1RoomReadings=factory("room_readings"),
-        EmsProcessValues=factory("ems"),
         ComponentGroup=create_group,
     ):
         hsm = OvumHsm(object(), options=options)
@@ -263,7 +273,6 @@ async def test_hsm_setup_builds_detected_subsystems_and_update_groups():
     assert hsm.heating_circuit_1 is not None
     assert hsm.heating_circuit_1.room_readings is not None
     assert hsm.heating_circuit_2 is None
-    assert hsm.ems is not None
     assert created["hot_water_readings"][0].metadata == {"sensor_count": 2}
     assert created["buffer_readings"][0].metadata == {"sensor_count": 2}
     assert created["circuit_readings"][0].metadata == {"base_offset": 0}
@@ -304,6 +313,5 @@ async def test_hsm_without_optional_features_has_no_settings_group():
     assert hsm.heating_buffer is None
     assert hsm.heating_circuit_1 is None
     assert hsm.heating_circuit_2 is None
-    assert hsm.ems is None
     assert len(groups) == 1
     groups[0].async_update.assert_awaited_once_with()

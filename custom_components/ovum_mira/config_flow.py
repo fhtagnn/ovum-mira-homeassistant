@@ -15,7 +15,6 @@ from .const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
-    CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DEFAULT_DHW_HOLIDAY_THRESHOLD,
     DEFAULT_PORT,
@@ -44,15 +43,13 @@ def _installation_options_for_entry(entry: config_entries.ConfigEntry) -> Instal
         heating_buffer_sensor_count=cfg.get(CONF_BUFFER_SENSOR_COUNT, 1),
         hot_water_sensor_count=cfg.get(CONF_DHW_SENSOR_COUNT, 1),
         heating_circuit_1_room_sensor=cfg.get(CONF_HK1_ROOM_SENSOR, False),
-        pv_sensor_module_installed=cfg.get(CONF_PV_SENSOR_MODULE, False),
-        enable_ems_writes=False,
     )
 
 
 class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for OVUM MIRA."""
 
-    VERSION = 5
+    VERSION = 6
     MINOR_VERSION = 0
 
     def __init__(self) -> None:
@@ -168,7 +165,6 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_BUFFER_SENSOR_COUNT: user_input.get(CONF_BUFFER_SENSOR_COUNT, 1),
                 CONF_DHW_SENSOR_COUNT: user_input.get(CONF_DHW_SENSOR_COUNT, 1),
                 CONF_HK1_ROOM_SENSOR: user_input.get(CONF_HK1_ROOM_SENSOR, False),
-                CONF_PV_SENSOR_MODULE: user_input.get(CONF_PV_SENSOR_MODULE, False),
             }
             return self.async_create_entry(
                 title="OVUM MIRA",
@@ -183,7 +179,6 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             fields[vol.Required(CONF_DHW_SENSOR_COUNT, default=1)] = vol.In({1: "1", 2: "2"})
         if self._detected.get("hk1"):
             fields[vol.Required(CONF_HK1_ROOM_SENSOR, default=False)] = bool
-        fields[vol.Required(CONF_PV_SENSOR_MODULE, default=False)] = bool
         return self.async_show_form(step_id="installation", data_schema=vol.Schema(fields))
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> FlowResult:
@@ -296,10 +291,6 @@ class OvumMiraOptionsFlow(config_entries.OptionsFlowWithReload):
                 vol.Required(
                     CONF_HK1_ROOM_SENSOR,
                     default=current.get(CONF_HK1_ROOM_SENSOR, False),
-                ): bool,
-                vol.Required(
-                    CONF_PV_SENSOR_MODULE,
-                    default=current.get(CONF_PV_SENSOR_MODULE, False),
                 ): bool,
                 vol.Required(
                     CONF_DHW_HOLIDAY_DETECTION,

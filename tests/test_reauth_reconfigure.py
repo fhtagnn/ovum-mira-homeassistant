@@ -12,7 +12,6 @@ from custom_components.ovum_mira.const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
-    CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DOMAIN,
 )
@@ -34,7 +33,6 @@ def _entry(*, host=HOST, port=PORT, login="1234", wpm_count=1):
             CONF_BUFFER_SENSOR_COUNT: 1,
             CONF_DHW_SENSOR_COUNT: 2,
             CONF_HK1_ROOM_SENSOR: True,
-            CONF_PV_SENSOR_MODULE: False,
         },
     )
 

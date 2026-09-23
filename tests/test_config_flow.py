@@ -16,7 +16,6 @@ from custom_components.ovum_mira.const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
-    CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DOMAIN,
 )
@@ -83,7 +82,6 @@ async def test_full_user_flow(hass):
                 CONF_BUFFER_SENSOR_COUNT: 1,
                 CONF_DHW_SENSOR_COUNT: 2,
                 CONF_HK1_ROOM_SENSOR: True,
-                CONF_PV_SENSOR_MODULE: False,
             },
         )
         await hass.async_block_till_done()
@@ -100,9 +98,8 @@ async def test_full_user_flow(hass):
         CONF_BUFFER_SENSOR_COUNT: 1,
         CONF_DHW_SENSOR_COUNT: 2,
         CONF_HK1_ROOM_SENSOR: True,
-        CONF_PV_SENSOR_MODULE: False,
     }
-    assert result["result"].version == 5
+    assert result["result"].version == 6
     assert result["result"].unique_id == f"{HOST}:{PORT}"
     setup_entry.assert_awaited_once()
 
@@ -184,7 +181,7 @@ async def test_installation_form_only_shows_detected_features(hass):
         result = await _submit_connection(hass, result["flow_id"])
 
     schema_keys = {key.schema for key in result["data_schema"].schema}
-    assert schema_keys == {CONF_PV_SENSOR_MODULE}
+    assert schema_keys == set()
 
 
 async def test_options_flow(hass):
@@ -200,7 +197,6 @@ async def test_options_flow(hass):
             CONF_BUFFER_SENSOR_COUNT: 1,
             CONF_DHW_SENSOR_COUNT: 1,
             CONF_HK1_ROOM_SENSOR: False,
-            CONF_PV_SENSOR_MODULE: False,
         },
     )
     entry.add_to_hass(hass)
@@ -224,7 +220,6 @@ async def test_options_flow(hass):
                 CONF_BUFFER_SENSOR_COUNT: 2,
                 CONF_DHW_SENSOR_COUNT: 2,
                 CONF_HK1_ROOM_SENSOR: True,
-                CONF_PV_SENSOR_MODULE: True,
             },
         )
 
@@ -232,12 +227,11 @@ async def test_options_flow(hass):
     assert entry.options[CONF_BUFFER_SENSOR_COUNT] == 2
     assert entry.options[CONF_DHW_SENSOR_COUNT] == 2
     assert entry.options[CONF_HK1_ROOM_SENSOR] is True
-    assert entry.options[CONF_PV_SENSOR_MODULE] is True
     schedule_reload.assert_called_once_with(entry.entry_id)
 
 
 async def test_holiday_options_can_be_enabled_edited_and_disabled(hass):
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST, CONF_PORT: PORT}, version=5)
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST, CONF_PORT: PORT}, version=6)
     entry.add_to_hass(hass)
 
     for enabled, threshold in [(True, 12.5), (True, 20.0), (False, 20.0)]:
@@ -261,7 +255,7 @@ async def test_holiday_options_can_be_enabled_edited_and_disabled(hass):
 
 @pytest.mark.parametrize("threshold", [-1, 61, "not-a-number", float("nan"), float("inf")])
 async def test_holiday_options_reject_invalid_thresholds(hass, threshold):
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST, CONF_PORT: PORT}, version=5)
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST, CONF_PORT: PORT}, version=6)
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     with pytest.raises(vol.Invalid):
