@@ -12,8 +12,6 @@ class InstallationOptions:
     heating_buffer_sensor_count: int = 1
     hot_water_sensor_count: int = 1
     heating_circuit_1_room_sensor: bool = False
-    pv_sensor_module_installed: bool = False
-    enable_ems_writes: bool = False
 
     def __post_init__(self) -> None:
         if self.heating_buffer_sensor_count not in (1, 2):
