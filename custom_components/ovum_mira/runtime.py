@@ -3,7 +3,16 @@ from dataclasses import dataclass
 from modbus_connection import ModbusTcpParams
 from modbus_connection.tmodbus import ModbusConnection
 
-from .const import FIRST_WPM_UNIT, HSM_UNIT, MAX_WPM_COUNT
+from homeassistant.config_entries import ConfigEntry
+
+from .const import (
+    CONF_BUFFER_SENSOR_COUNT,
+    CONF_DHW_SENSOR_COUNT,
+    CONF_HK1_ROOM_SENSOR,
+    FIRST_WPM_UNIT,
+    HSM_UNIT,
+    MAX_WPM_COUNT,
+)
 from .ovum_mira_modbus import InstallationOptions, OvumMiraSystem
 
 
@@ -12,6 +21,16 @@ class OvumRuntime:
     connection: ModbusConnection
     system: OvumMiraSystem
     coordinator: object | None = None
+
+
+def installation_options_from_entry(entry: ConfigEntry) -> InstallationOptions:
+    """Build physical installation options from one config entry."""
+    config = {**entry.data, **entry.options}
+    return InstallationOptions(
+        heating_buffer_sensor_count=config.get(CONF_BUFFER_SENSOR_COUNT, 1),
+        hot_water_sensor_count=config.get(CONF_DHW_SENSOR_COUNT, 1),
+        heating_circuit_1_room_sensor=config.get(CONF_HK1_ROOM_SENSOR, False),
+    )
 
 
 async def async_open_system(

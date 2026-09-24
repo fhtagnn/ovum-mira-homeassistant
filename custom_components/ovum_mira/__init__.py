@@ -16,8 +16,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import OvumMiraCoordinator
-from .ovum_mira_modbus import InstallationOptions
-from .runtime import OvumRuntime, async_open_system
+from .runtime import OvumRuntime, async_open_system, installation_options_from_entry
 
 
 type OvumConfigEntry = ConfigEntry[OvumRuntime]
@@ -70,11 +69,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool:
     """Set up OVUM MIRA from a config entry."""
     cfg = {**entry.data, **entry.options}
-    options = InstallationOptions(
-        heating_buffer_sensor_count=cfg.get(CONF_BUFFER_SENSOR_COUNT, 1),
-        hot_water_sensor_count=cfg.get(CONF_DHW_SENSOR_COUNT, 1),
-        heating_circuit_1_room_sensor=cfg.get(CONF_HK1_ROOM_SENSOR, False),
-    )
+    options = installation_options_from_entry(entry)
     login = entry.data.get(CONF_LOGIN_CODE)
 
     try:

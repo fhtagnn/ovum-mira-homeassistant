@@ -8,10 +8,13 @@
 
 ### Changed
 - Reuse the shared controller-step snapping helper for validated numeric writes.
+- Build installation options through one shared config-entry mapping.
+- Simplify stable entity object-ID selection without changing public IDs.
 
 ### Removed
 - Remove the non-functional PV sensor-module configuration option and migrate existing config entries to schema version 6 without it.
 - Remove the unreachable EMS runtime switch while retaining the typed EMS register definitions for future features.
+- Remove the unused raw-register diagnostics helper and legacy compressor-runtime alias.
 
 ## 0.1.0 - 2026-09-21
 

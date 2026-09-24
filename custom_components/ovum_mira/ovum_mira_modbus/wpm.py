@@ -18,11 +18,6 @@ class WpmReadings(Component):
     # XLS names this "Betriebsstunden", but Type-Information explicitly says unit "min".
     compressor_runtime_minutes = int32(56030, unit="min")
 
-    @property
-    def compressor_on_time(self) -> int | None:
-        """Backward-compatible alias; value is minutes, not hours."""
-        return self.compressor_runtime_minutes
-
 
 class OvumWpm:
     """Typed model of one WPM unit (111..118)."""

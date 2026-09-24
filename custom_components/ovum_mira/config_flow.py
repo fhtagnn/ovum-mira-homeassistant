@@ -23,7 +23,7 @@ from .const import (
     MAX_WPM_COUNT,
 )
 from .ovum_mira_modbus import BufferSystemType, HeatingCircuitType, InstallationOptions, SwitchState
-from .runtime import async_open_system
+from .runtime import async_open_system, installation_options_from_entry
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,16 +34,6 @@ _LOGIN_CODE_SELECTOR = TextSelector(
         autocomplete="current-password",
     )
 )
-
-
-def _installation_options_for_entry(entry: config_entries.ConfigEntry) -> InstallationOptions:
-    """Build physical installation options from config-entry data and options."""
-    cfg = {**entry.data, **entry.options}
-    return InstallationOptions(
-        heating_buffer_sensor_count=cfg.get(CONF_BUFFER_SENSOR_COUNT, 1),
-        hot_water_sensor_count=cfg.get(CONF_DHW_SENSOR_COUNT, 1),
-        heating_circuit_1_room_sensor=cfg.get(CONF_HK1_ROOM_SENSOR, False),
-    )
 
 
 class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -81,7 +71,7 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 port,
                 wpm_count,
                 login_code=login_code,
-                options=_installation_options_for_entry(entry),
+                options=installation_options_from_entry(entry),
             )
         except PermissionError as err:
             _LOGGER.warning("OVUM MIRA login validation was rejected: %s", err)
