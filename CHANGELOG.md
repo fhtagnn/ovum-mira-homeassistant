@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.1 - 2026-09-30
+
 ### Fixed
 - Recheck the authenticated-access status of every configured OVUM unit immediately before controller writes. Expired sessions are renewed with the stored login code, and a rejected stored code starts Home Assistant's reauthentication flow.
 - Align the Modbus connection library with the version required by current Home Assistant releases.

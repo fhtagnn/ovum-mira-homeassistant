@@ -13,7 +13,7 @@ def _load_json(relative: str):
 
 def test_manifest_and_diagnostics_version_constant_match():
     manifest = _load_json("custom_components/ovum_mira/manifest.json")
-    assert manifest["version"] == INTEGRATION_VERSION == "0.1.0"
+    assert manifest["version"] == INTEGRATION_VERSION == "0.1.1"
 
 
 def test_local_brand_images_have_expected_png_dimensions():
