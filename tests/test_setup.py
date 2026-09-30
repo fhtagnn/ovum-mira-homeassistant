@@ -14,7 +14,6 @@ from custom_components.ovum_mira.const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
-    CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     DOMAIN,
     PLATFORMS,
@@ -37,7 +36,6 @@ def _entry(*, options: dict | None = None) -> MockConfigEntry:
             CONF_BUFFER_SENSOR_COUNT: 1,
             CONF_DHW_SENSOR_COUNT: 1,
             CONF_HK1_ROOM_SENSOR: False,
-            CONF_PV_SENSOR_MODULE: False,
         },
         options=options or {},
     )
@@ -60,7 +58,6 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass, holiday_optio
             CONF_BUFFER_SENSOR_COUNT: 2,
             CONF_DHW_SENSOR_COUNT: 2,
             CONF_HK1_ROOM_SENSOR: True,
-            CONF_PV_SENSOR_MODULE: True,
             **holiday_options,
         }
     )
@@ -91,8 +88,6 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass, holiday_optio
             heating_buffer_sensor_count=2,
             hot_water_sensor_count=2,
             heating_circuit_1_room_sensor=True,
-            pv_sensor_module_installed=True,
-            enable_ems_writes=False,
         ),
     )
     coordinator_cls.assert_called_once_with(

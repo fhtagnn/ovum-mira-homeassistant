@@ -167,7 +167,6 @@ class OvumHsm:
         self.heating_buffer: HeatingBuffer | None = None
         self.heating_circuit_1: HeatingCircuit | None = None
         self.heating_circuit_2: HeatingCircuit | None = None
-        self.ems: EmsProcessValues | None = None
         self._reading_group: ComponentGroup | None = None
         self._settings_group: ComponentGroup | None = None
         self._setup_complete = False
@@ -205,9 +204,6 @@ class OvumHsm:
             room_sensor=False,
         )
 
-        if self.options.enable_ems_writes:
-            self.ems = EmsProcessValues(self._unit)
-
         readings = [self.common]
         settings = []
         for subsystem in (self.hot_water, self.heating_buffer):
@@ -220,10 +216,6 @@ class OvumHsm:
                 settings.append(circuit.settings)
                 if circuit.room_readings is not None:
                     readings.append(circuit.room_readings)
-        if self.ems is not None:
-            # EMS values are process values; include in readings only when explicitly enabled.
-            readings.append(self.ems)
-
         self._reading_group = ComponentGroup(self._unit, readings)
         self._settings_group = ComponentGroup(self._unit, settings) if settings else None
         self._setup_complete = True
