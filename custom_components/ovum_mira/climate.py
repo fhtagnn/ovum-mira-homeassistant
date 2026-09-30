@@ -47,7 +47,9 @@ class HeatingCircuitClimate(OvumMiraEntity, ClimateEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is not None:
             await self._async_write_action(
-                self._circuit.settings.async_set_room_target_heating(float(temperature))
+                lambda: self._circuit.settings.async_set_room_target_heating(
+                    float(temperature)
+                )
             )
 
 

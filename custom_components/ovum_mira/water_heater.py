@@ -44,14 +44,20 @@ class OvumHotWater(OvumMiraEntity, WaterHeaterEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is not None:
             await self._async_write_action(
-                self._hot_water.settings.async_set_target_temperature(round(float(temperature)))
+                lambda: self._hot_water.settings.async_set_target_temperature(
+                    round(float(temperature))
+                )
             )
 
     async def async_turn_on(self) -> None:
-        await self._async_write_action(self._hot_water.settings.async_set_enabled(True))
+        await self._async_write_action(
+            lambda: self._hot_water.settings.async_set_enabled(True)
+        )
 
     async def async_turn_off(self) -> None:
-        await self._async_write_action(self._hot_water.settings.async_set_enabled(False))
+        await self._async_write_action(
+            lambda: self._hot_water.settings.async_set_enabled(False)
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:

@@ -44,7 +44,8 @@ async def test_number_setup_exposes_detected_controls_and_executes_bindings():
                 settings=circuit2_settings,
                 room_readings=None,
             ),
-        )
+        ),
+        async_ensure_login=AsyncMock(),
     )
     coordinator = SimpleNamespace(
         system=system,
@@ -97,7 +98,8 @@ async def test_number_setup_skips_absent_optional_systems():
             heating_buffer=None,
             heating_circuit_1=None,
             heating_circuit_2=None,
-        )
+        ),
+        async_ensure_login=AsyncMock(),
     )
     coordinator = SimpleNamespace(
         system=system,

@@ -29,10 +29,14 @@ class OvumHotWaterMainSwitch(OvumMiraEntity, SwitchEntity):
         return state == SwitchState.ON
 
     async def async_turn_on(self, **kwargs) -> None:
-        await self._async_write_action(self._hot_water.settings.async_set_enabled(True))
+        await self._async_write_action(
+            lambda: self._hot_water.settings.async_set_enabled(True)
+        )
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self._async_write_action(self._hot_water.settings.async_set_enabled(False))
+        await self._async_write_action(
+            lambda: self._hot_water.settings.async_set_enabled(False)
+        )
 
 
 async def async_setup_entry(
