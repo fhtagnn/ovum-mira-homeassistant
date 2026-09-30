@@ -70,6 +70,8 @@ Schema version 5 separates connection data from physical installation settings i
 
 `async_migrate_entry` updates older config-entry schemas in place. A version-4 entry is converted without changing its config-entry ID or unique ID, so existing internal stores and entity-registry associations remain attached. Existing option values take precedence over legacy copies in `data`, and unrelated future fields are preserved.
 
+Schema version 6 removes the former PV sensor-module option because it had no effect on runtime behavior. Migration removes that obsolete key from both `ConfigEntry.data` and `ConfigEntry.options` while preserving all active settings and unrelated fields. EMS/PV register definitions remain available in the protocol layer for future features built on documented behavior.
+
 Config-entry schema migrations are separate from Recorder/history migration. The integration does not import old Powercalc/helper statistics from earlier prototype setups.
 
 ## Safe update procedure

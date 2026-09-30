@@ -55,17 +55,13 @@ class OvumMiraEntity(CoordinatorEntity[OvumMiraCoordinator]):
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry_id}_{key}"
         self._entry_id = entry_id
-        self._ovum_suggested_object_id = f"ovum_{_OBJECT_IDS.get(key, key)}"
+        self._attr_suggested_object_id = f"ovum_{_OBJECT_IDS.get(key, key)}"
 
     @property
     @override
     def suggested_object_id(self) -> str | None:
         """Return a stable English object ID independent of UI language."""
-        return getattr(
-            self,
-            "_attr_suggested_object_id",
-            self._ovum_suggested_object_id,
-        )
+        return self._attr_suggested_object_id
 
     async def _async_write_action(self, operation: Awaitable[Any]) -> None:
         """Execute a device write and expose transport failures to the user."""
@@ -93,7 +89,7 @@ class OvumWpmEntity(OvumMiraEntity):
     def __init__(self, coordinator: OvumMiraCoordinator, entry_id: str, unit_id: int, key: str) -> None:
         super().__init__(coordinator, entry_id, f"wpm_{unit_id}_{key}")
         self._unit_id = unit_id
-        self._ovum_suggested_object_id = f"ovum_wpm_{unit_id - 110}_{key}"
+        self._attr_suggested_object_id = f"ovum_wpm_{unit_id - 110}_{key}"
 
     @property
     def device_info(self) -> DeviceInfo:

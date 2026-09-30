@@ -10,15 +10,13 @@ from .const import (
     CONF_DHW_SENSOR_COUNT,
     CONF_HK1_ROOM_SENSOR,
     CONF_LOGIN_CODE,
-    CONF_PV_SENSOR_MODULE,
     CONF_WPM_COUNT,
     CONF_WPM_UNIT,
     DEFAULT_DHW_HOLIDAY_THRESHOLD,
     PLATFORMS,
 )
 from .coordinator import OvumMiraCoordinator
-from .ovum_mira_modbus import InstallationOptions
-from .runtime import OvumRuntime, async_open_system
+from .runtime import OvumRuntime, async_open_system, installation_options_from_entry
 
 
 type OvumConfigEntry = ConfigEntry[OvumRuntime]
@@ -27,13 +25,14 @@ _INSTALLATION_DEFAULTS = {
     CONF_BUFFER_SENSOR_COUNT: 1,
     CONF_DHW_SENSOR_COUNT: 1,
     CONF_HK1_ROOM_SENSOR: False,
-    CONF_PV_SENSOR_MODULE: False,
 }
+
+_CONF_LEGACY_PV_SENSOR_MODULE = "pv_sensor_module_installed"
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate older config entries without discarding user data."""
-    if entry.version >= 5:
+    if entry.version >= 6:
         return True
 
     data = dict(entry.data)
@@ -52,11 +51,16 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             options[key] = data.get(key, default)
         data.pop(key, None)
 
+    # Schema v6 removes the PV-module choice because it never affected runtime
+    # behavior. Drop the obsolete value from both possible storage locations.
+    data.pop(_CONF_LEGACY_PV_SENSOR_MODULE, None)
+    options.pop(_CONF_LEGACY_PV_SENSOR_MODULE, None)
+
     hass.config_entries.async_update_entry(
         entry,
         data=data,
         options=options,
-        version=5,
+        version=6,
         minor_version=0,
     )
     return True
@@ -65,13 +69,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool:
     """Set up OVUM MIRA from a config entry."""
     cfg = {**entry.data, **entry.options}
-    options = InstallationOptions(
-        heating_buffer_sensor_count=cfg.get(CONF_BUFFER_SENSOR_COUNT, 1),
-        hot_water_sensor_count=cfg.get(CONF_DHW_SENSOR_COUNT, 1),
-        heating_circuit_1_room_sensor=cfg.get(CONF_HK1_ROOM_SENSOR, False),
-        pv_sensor_module_installed=cfg.get(CONF_PV_SENSOR_MODULE, False),
-        enable_ems_writes=False,
-    )
+    options = installation_options_from_entry(entry)
     login = entry.data.get(CONF_LOGIN_CODE)
 
     try:
