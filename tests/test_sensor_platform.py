@@ -135,6 +135,7 @@ async def test_sensor_platform_exposes_expected_metadata_and_values():
 
     status = _by_unique_id(entities, "entry-id_wpm_111_status")
     assert status.native_value == "ready"
+    assert status.translation_key == "wpm_status"
     assert status.device_class is SensorDeviceClass.ENUM
     assert "hot_water" in status.options
 

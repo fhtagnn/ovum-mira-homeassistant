@@ -38,6 +38,8 @@ Other compatible MIRA 1.1.x systems may work, but should be treated as unverifie
 - Domestic-hot-water control and main switch
 - Heating-circuit operating mode and room target controls
 - Temperature, power, status, runtime, and diagnostic sensors
+- Semantic Modbus-connectivity, WPM-problem, and WPM-running binary sensors
+- Importable automation blueprints for health, run-cycle, and status notifications
 - Derived electrical and thermal energy statistics
 - COP / work-factor monitoring
 - Operating-mode energy and work factors for domestic hot water and heating
@@ -99,6 +101,12 @@ Physical installation details that cannot be inferred safely from register value
 
 Changing these installation options reloads the config entry but does not create a new one.
 
+## Automation blueprints
+
+The repository includes optional Home Assistant blueprints for permanent system-health monitoring, run start/end notifications, and detailed WPM status observation. Their entity selectors show only compatible OVUM MIRA entities. Installing the integration does not create an automation or send notifications automatically.
+
+See [Automation blueprints](docs/AUTOMATION_BLUEPRINTS.md) for one-click import buttons, behavior, defaults, and notification options.
+
 ## Persistent parameter writes
 
 MIRA parameter types prefixed with `P_` are persistent controller parameters. The integration writes them only when the requested value differs from the current value and performs read-back verification. They are never intentionally rewritten on every polling cycle.
@@ -152,6 +160,7 @@ Additional technical notes are included in:
 - [Energy and efficiency statistics](docs/ENERGY_STATISTICS.md)
 - [DHW analytics](docs/DHW_ANALYTICS.md)
 - [Analysis history and diagnostics export](docs/ANALYSIS_EXPORT.md)
+- [Automation blueprints](docs/AUTOMATION_BLUEPRINTS.md)
 - [Upgrade and data compatibility](docs/UPGRADES.md)
 - [Release setup notes](docs/RELEASE_SETUP.md)
 - [Contributing](CONTRIBUTING.md)

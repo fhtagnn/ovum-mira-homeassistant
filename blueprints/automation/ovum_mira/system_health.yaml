@@ -1,0 +1,255 @@
+blueprint:
+  name: OVUM MIRA - System health notifications
+  description: >-
+    Reports explicit WPM problems and prolonged Modbus communication loss.
+    Normal states such as lockout, stopping, and defrost are not treated as
+    faults. Recovery messages are optional. Select only entities provided by
+    the OVUM MIRA integration.
+  domain: automation
+  author: fhtagnn
+  source_url: https://github.com/fhtagnn/ovum-mira-homeassistant/blob/main/blueprints/automation/ovum_mira/system_health.yaml
+  homeassistant:
+    min_version: 2026.8.0
+  input:
+    communication_sensor:
+      name: Modbus communication sensor
+      description: Installation-wide OVUM MIRA connectivity sensor.
+      selector:
+        entity:
+          filter:
+            - integration: ovum_mira
+              domain: binary_sensor
+              device_class: connectivity
+    problem_sensors:
+      name: WPM problem sensors
+      description: Select the problem sensor of every WPM to monitor.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: ovum_mira
+              domain: binary_sensor
+              device_class: problem
+    communication_delay:
+      name: Communication-loss delay
+      description: How long communication must remain disconnected before reporting it.
+      default:
+        hours: 0
+        minutes: 5
+        seconds: 0
+      selector:
+        duration: {}
+    notification_targets:
+      name: Notification targets
+      description: Optional notify entities. A Home Assistant persistent notification can be used independently below.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: notify
+    persistent_notification:
+      name: Home Assistant persistent notification
+      description: Also show or update the event in Home Assistant's notification panel.
+      default: true
+      selector:
+        boolean: {}
+    recovery_notifications:
+      name: Recovery notifications
+      description: Report when a previously reported problem or communication loss ends.
+      default: true
+      selector:
+        boolean: {}
+    message_language:
+      name: Message language
+      default: en
+      selector:
+        select:
+          options:
+            - label: English
+              value: en
+            - label: Deutsch
+              value: de
+    additional_actions:
+      name: Additional actions
+      description: >-
+        Optional actions such as TTS, lights, or legacy notification services.
+        Templates can use ovum_event, ovum_title, ovum_message,
+        ovum_source_entity, and ovum_status.
+      default: []
+      selector:
+        action: {}
+
+trigger_variables:
+  communication_sensor_for_trigger: !input communication_sensor
+  communication_delay_for_trigger: !input communication_delay
+
+triggers:
+  - trigger: state
+    entity_id: !input problem_sensors
+    to: "on"
+    id: problem
+  - trigger: state
+    entity_id: !input problem_sensors
+    from: "on"
+    to: "off"
+    id: problem_recovered
+  - trigger: template
+    id: communication_lost
+    value_template: >-
+      {% set selected_delay = communication_delay_for_trigger %}
+      {% set delay_seconds =
+          (selected_delay.get('hours', 0) | int) * 3600
+          + (selected_delay.get('minutes', 0) | int) * 60
+          + (selected_delay.get('seconds', 0) | int) %}
+      {% set communication = expand(communication_sensor_for_trigger) | first %}
+      {{ communication is not none
+         and communication.state == 'off'
+         and (as_timestamp(now()) - as_timestamp(communication.last_changed)) >= delay_seconds }}
+  - trigger: state
+    entity_id: !input communication_sensor
+    from: "off"
+    to: "on"
+    id: communication_recovered
+
+variables:
+  communication_sensor: !input communication_sensor
+  communication_delay: !input communication_delay
+  notification_targets: !input notification_targets
+  use_persistent_notification: !input persistent_notification
+  send_recovery: !input recovery_notifications
+  selected_language: !input message_language
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.id not in ['problem_recovered', 'communication_recovered']
+         or send_recovery }}
+  - condition: template
+    value_template: >-
+      {% if trigger.id != 'communication_recovered' %}
+        true
+      {% else %}
+        {% set delay_seconds =
+            (communication_delay.get('hours', 0) | int) * 3600
+            + (communication_delay.get('minutes', 0) | int) * 60
+            + (communication_delay.get('seconds', 0) | int) %}
+        {{ (as_timestamp(trigger.to_state.last_changed)
+            - as_timestamp(trigger.from_state.last_changed)) >= delay_seconds }}
+      {% endif %}
+
+actions:
+  - variables:
+      ovum_event: "{{ trigger.id }}"
+      ovum_source_entity: >-
+        {{ communication_sensor
+           if trigger.id in ['communication_lost', 'communication_recovered']
+           else trigger.entity_id }}
+      ovum_status: >-
+        {% if trigger.id == 'problem_recovered' %}
+          {{ trigger.from_state.attributes.get('wpm_status', 'unknown') }}
+        {% elif trigger.id == 'problem' %}
+          {{ trigger.to_state.attributes.get('wpm_status', 'unknown') }}
+        {% else %}
+          {{ states(communication_sensor) }}
+        {% endif %}
+      event_name: >-
+        {% if trigger.id in ['communication_lost', 'communication_recovered'] %}
+          {{ state_attr(communication_sensor, 'friendly_name') or communication_sensor }}
+        {% else %}
+          {{ trigger.to_state.name }}
+        {% endif %}
+      event_duration_seconds: >-
+        {% if trigger.id == 'communication_recovered' %}
+          {{ (as_timestamp(trigger.to_state.last_changed)
+              - as_timestamp(trigger.from_state.last_changed)) | int(0) }}
+        {% else %}
+          0
+        {% endif %}
+  - variables:
+      status_label: >-
+        {% set en = {
+          'fault': 'Fault',
+          'inverter_offline': 'Inverter offline'
+        } %}
+        {% set de = {
+          'fault': 'Störung',
+          'inverter_offline': 'Inverter offline'
+        } %}
+        {{ (de if selected_language == 'de' else en).get(ovum_status, ovum_status) }}
+      duration_label: >-
+        {% set total = event_duration_seconds | int(0) %}
+        {% set hours = total // 3600 %}
+        {% set minutes = (total % 3600) // 60 %}
+        {% if selected_language == 'de' %}
+          {{ (hours ~ ' h ') if hours else '' }}{{ minutes }} min
+        {% else %}
+          {{ (hours ~ ' h ') if hours else '' }}{{ minutes }} min
+        {% endif %}
+  - variables:
+      ovum_title: >-
+        {% if selected_language == 'de' %}
+          {% if ovum_event == 'problem' %}OVUM MIRA: Störung
+          {% elif ovum_event == 'communication_lost' %}OVUM MIRA: Verbindung verloren
+          {% else %}OVUM MIRA: Wiederhergestellt{% endif %}
+        {% else %}
+          {% if ovum_event == 'problem' %}OVUM MIRA: Problem
+          {% elif ovum_event == 'communication_lost' %}OVUM MIRA: Connection lost
+          {% else %}OVUM MIRA: Recovered{% endif %}
+        {% endif %}
+      ovum_message: >-
+        {% if selected_language == 'de' %}
+          {% if ovum_event == 'problem' %}
+            {{ event_name }} meldet {{ status_label }}.
+          {% elif ovum_event == 'problem_recovered' %}
+            {{ event_name }} meldet {{ status_label }} nicht mehr.
+          {% elif ovum_event == 'communication_lost' %}
+            {{ event_name }} ist länger als die eingestellte Wartezeit unterbrochen.
+            Letzte erfolgreiche Aktualisierung:
+            {{ state_attr(communication_sensor, 'last_successful_update') or 'unbekannt' }}.
+          {% else %}
+            {{ event_name }} ist nach {{ duration_label }} wiederhergestellt.
+          {% endif %}
+        {% else %}
+          {% if ovum_event == 'problem' %}
+            {{ event_name }} reports {{ status_label }}.
+          {% elif ovum_event == 'problem_recovered' %}
+            {{ event_name }} no longer reports {{ status_label }}.
+          {% elif ovum_event == 'communication_lost' %}
+            {{ event_name }} has been disconnected longer than the configured delay.
+            Last successful update:
+            {{ state_attr(communication_sensor, 'last_successful_update') or 'unknown' }}.
+          {% else %}
+            {{ event_name }} recovered after {{ duration_label }}.
+          {% endif %}
+        {% endif %}
+      persistent_notification_id: >-
+        {{ ('ovum_mira_health_' ~ ovum_source_entity) | replace('.', '_') }}
+  - if:
+      - condition: template
+        value_template: "{{ use_persistent_notification }}"
+    then:
+      - action: persistent_notification.create
+        data:
+          notification_id: "{{ persistent_notification_id }}"
+          title: "{{ ovum_title }}"
+          message: "{{ ovum_message }}"
+  - if:
+      - condition: template
+        value_template: "{{ notification_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: !input notification_targets
+        data:
+          title: "{{ ovum_title }}"
+          message: "{{ ovum_message }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ true }}"
+        sequence: !input additional_actions
+
+mode: parallel
+max: 10
+max_exceeded: silent
