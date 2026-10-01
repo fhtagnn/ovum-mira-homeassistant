@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+- Add enabled-by-default semantic binary sensors for installation-wide Modbus communication, per-WPM explicit problems, and per-WPM running state.
+- Add importable Home Assistant blueprints for system-health notifications, WPM run start/end messages, and selectable WPM status observation.
+- Restrict blueprint entity selectors to the OVUM MIRA integration and the required connectivity, problem, running, or enum device class.
+
+### Fixed
+- Apply the existing WPM status translation key to the enum status sensor.
+
 ## 0.1.1 - 2026-09-30
 
 ### Fixed

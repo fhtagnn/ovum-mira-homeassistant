@@ -38,6 +38,7 @@ async def test_coordinator_wraps_device_error_as_update_failed(hass):
         await coordinator._async_update_data()
 
     derived.assert_not_called()
+    assert coordinator.modbus_available is False
 
 
 async def test_coordinator_marks_failure_and_recovers_on_next_refresh(hass):
@@ -48,10 +49,27 @@ async def test_coordinator_marks_failure_and_recovers_on_next_refresh(hass):
 
     await coordinator.async_refresh()
     assert coordinator.last_update_success is False
+    assert coordinator.modbus_available is False
 
     await coordinator.async_refresh()
     assert coordinator.last_update_success is True
+    assert coordinator.modbus_available is True
     assert system.async_update.await_count == 2
+
+
+async def test_derived_failure_does_not_report_modbus_disconnect(hass):
+    """Keep communication health separate from local derived-data failures."""
+    system = _system()
+    coordinator = OvumMiraCoordinator(hass, system, "entry-id")
+    coordinator._update_derived_data = MagicMock(
+        side_effect=RuntimeError("analytics failed")
+    )
+
+    with pytest.raises(UpdateFailed, match="analytics failed"):
+        await coordinator._async_update_data()
+
+    assert coordinator.modbus_available is True
+    assert coordinator.last_successful_modbus_update is not None
 
 
 async def test_coordinator_initialize_restores_all_persistent_state(hass):

@@ -44,6 +44,14 @@ def test_german_sensor_translation_covers_all_sensor_keys():
     assert set(german["entity"]["sensor"]) == set(strings["entity"]["sensor"])
 
 
+def test_german_binary_sensor_translation_covers_all_binary_sensor_keys():
+    strings = _load_json("custom_components/ovum_mira/strings.json")
+    german = _load_json("custom_components/ovum_mira/translations/de.json")
+    assert set(german["entity"]["binary_sensor"]) == set(
+        strings["entity"]["binary_sensor"]
+    )
+
+
 def test_holiday_options_have_english_and_german_help_text():
     keys = {"dhw_holiday_detection_enabled", "dhw_holiday_target_threshold"}
     for path in ["strings.json", "translations/en.json", "translations/de.json"]:

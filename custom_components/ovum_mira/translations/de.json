@@ -163,6 +163,11 @@
         }
       }
     },
+    "binary_sensor": {
+      "modbus_communication": {"name": "Modbus-Kommunikation"},
+      "wpm_problem": {"name": "Problem"},
+      "wpm_running": {"name": "Läuft"}
+    },
     "number": {
       "pv_hot_water_target_temperature": {"name": "PV – Warmwasser Solltemperatur"},
       "pv_heating_buffer_target_temperature": {"name": "PV – Heizungspuffer Solltemperatur"},

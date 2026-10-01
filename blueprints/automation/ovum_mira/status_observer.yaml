@@ -1,0 +1,220 @@
+blueprint:
+  name: OVUM MIRA - WPM status observer
+  description: >-
+    Reports selected WPM status transitions for commissioning and diagnostics.
+    Unknown, unavailable, and initial startup states are ignored. Explicit fault
+    notifications are normally better handled by the system-health blueprint.
+  domain: automation
+  author: fhtagnn
+  source_url: https://github.com/fhtagnn/ovum-mira-homeassistant/blob/main/blueprints/automation/ovum_mira/status_observer.yaml
+  homeassistant:
+    min_version: 2026.8.0
+  input:
+    status_sensor:
+      name: WPM status sensor
+      description: Select the enum status sensor of one OVUM MIRA WPM.
+      selector:
+        entity:
+          filter:
+            - integration: ovum_mira
+              domain: sensor
+              device_class: enum
+    reported_states:
+      name: Reported states
+      description: Select the states that should create a message.
+      default:
+        - start
+        - hot_water
+        - heating
+        - cooling
+        - defrost
+        - manual_defrost
+        - stopping
+        - lockout
+        - below_operating_limit
+        - inverter_reset
+      selector:
+        select:
+          multiple: true
+          mode: dropdown
+          options:
+            - label: Fault / Störung
+              value: fault
+            - label: Inverter offline
+              value: inverter_offline
+            - label: Lockout / Sperrzeit
+              value: lockout
+            - label: Oil preheating / Ölvorheizen
+              value: oil_preheating
+            - label: Ready / Bereit
+              value: ready
+            - label: Start
+              value: start
+            - label: Hot water / Warmwasser
+              value: hot_water
+            - label: Heating / Heizen
+              value: heating
+            - label: Cooling / Kühlen
+              value: cooling
+            - label: Defrost / Abtauen
+              value: defrost
+            - label: Manual defrost / Manuell abtauen
+              value: manual_defrost
+            - label: Stopping / Stoppt
+              value: stopping
+            - label: Below operating limit / Einsatzgrenze unterschritten
+              value: below_operating_limit
+            - label: Inverter reset
+              value: inverter_reset
+    minimum_state_duration:
+      name: Minimum state duration
+      description: Ignore a state unless it remains active for this duration.
+      default:
+        hours: 0
+        minutes: 0
+        seconds: 0
+      selector:
+        duration: {}
+    notification_targets:
+      name: Notification targets
+      description: Optional notify entities.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: notify
+    persistent_notification:
+      name: Home Assistant persistent notification
+      default: false
+      selector:
+        boolean: {}
+    message_language:
+      name: Message language
+      default: en
+      selector:
+        select:
+          options:
+            - label: English
+              value: en
+            - label: Deutsch
+              value: de
+    additional_actions:
+      name: Additional actions
+      description: >-
+        Optional actions such as TTS or lights. Templates can use ovum_event,
+        ovum_title, ovum_message, ovum_source_entity, ovum_previous_status, and
+        ovum_status.
+      default: []
+      selector:
+        action: {}
+
+triggers:
+  - trigger: state
+    entity_id: !input status_sensor
+    for: !input minimum_state_duration
+    id: status_changed
+
+variables:
+  status_sensor: !input status_sensor
+  reported_states: !input reported_states
+  notification_targets: !input notification_targets
+  use_persistent_notification: !input persistent_notification
+  selected_language: !input message_language
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.from_state is not none
+         and trigger.to_state is not none
+         and trigger.from_state.state not in ['unknown', 'unavailable']
+         and trigger.to_state.state not in ['unknown', 'unavailable']
+         and trigger.from_state.state != trigger.to_state.state
+         and trigger.to_state.state in reported_states }}
+
+actions:
+  - variables:
+      ovum_event: status_changed
+      ovum_source_entity: "{{ status_sensor }}"
+      ovum_previous_status: "{{ trigger.from_state.state }}"
+      ovum_status: "{{ trigger.to_state.state }}"
+      event_name: "{{ trigger.to_state.name }}"
+  - variables:
+      previous_status_label: >-
+        {% set en = {
+          'fault': 'Fault', 'inverter_offline': 'Inverter offline',
+          'lockout': 'Lockout', 'oil_preheating': 'Oil preheating',
+          'ready': 'Ready', 'start': 'Start', 'hot_water': 'Hot water',
+          'heating': 'Heating', 'cooling': 'Cooling', 'defrost': 'Defrost',
+          'manual_defrost': 'Manual defrost', 'stopping': 'Stopping',
+          'below_operating_limit': 'Below operating limit',
+          'inverter_reset': 'Inverter reset'
+        } %}
+        {% set de = {
+          'fault': 'Störung', 'inverter_offline': 'Inverter offline',
+          'lockout': 'Sperrzeit', 'oil_preheating': 'Ölvorheizen',
+          'ready': 'Bereit', 'start': 'Start', 'hot_water': 'Warmwasser',
+          'heating': 'Heizen', 'cooling': 'Kühlen', 'defrost': 'Abtauen',
+          'manual_defrost': 'Manuell abtauen', 'stopping': 'Stoppt',
+          'below_operating_limit': 'Einsatzgrenze unterschritten',
+          'inverter_reset': 'Inverter-Reset'
+        } %}
+        {{ (de if selected_language == 'de' else en).get(
+             ovum_previous_status, ovum_previous_status) }}
+      status_label: >-
+        {% set en = {
+          'fault': 'Fault', 'inverter_offline': 'Inverter offline',
+          'lockout': 'Lockout', 'oil_preheating': 'Oil preheating',
+          'ready': 'Ready', 'start': 'Start', 'hot_water': 'Hot water',
+          'heating': 'Heating', 'cooling': 'Cooling', 'defrost': 'Defrost',
+          'manual_defrost': 'Manual defrost', 'stopping': 'Stopping',
+          'below_operating_limit': 'Below operating limit',
+          'inverter_reset': 'Inverter reset'
+        } %}
+        {% set de = {
+          'fault': 'Störung', 'inverter_offline': 'Inverter offline',
+          'lockout': 'Sperrzeit', 'oil_preheating': 'Ölvorheizen',
+          'ready': 'Bereit', 'start': 'Start', 'hot_water': 'Warmwasser',
+          'heating': 'Heizen', 'cooling': 'Kühlen', 'defrost': 'Abtauen',
+          'manual_defrost': 'Manuell abtauen', 'stopping': 'Stoppt',
+          'below_operating_limit': 'Einsatzgrenze unterschritten',
+          'inverter_reset': 'Inverter-Reset'
+        } %}
+        {{ (de if selected_language == 'de' else en).get(ovum_status, ovum_status) }}
+  - variables:
+      ovum_title: >-
+        {{ 'OVUM MIRA: WPM-Status geändert'
+           if selected_language == 'de'
+           else 'OVUM MIRA: WPM status changed' }}
+      ovum_message: >-
+        {{ event_name }}: {{ previous_status_label }} → {{ status_label }}
+      persistent_notification_id: >-
+        {{ ('ovum_mira_status_' ~ ovum_source_entity) | replace('.', '_') }}
+  - if:
+      - condition: template
+        value_template: "{{ use_persistent_notification }}"
+    then:
+      - action: persistent_notification.create
+        data:
+          notification_id: "{{ persistent_notification_id }}"
+          title: "{{ ovum_title }}"
+          message: "{{ ovum_message }}"
+  - if:
+      - condition: template
+        value_template: "{{ notification_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: !input notification_targets
+        data:
+          title: "{{ ovum_title }}"
+          message: "{{ ovum_message }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ true }}"
+        sequence: !input additional_actions
+
+mode: queued
+max: 20
+max_exceeded: silent
