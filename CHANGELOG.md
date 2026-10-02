@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed
+- Delegate Modbus TCP connection ownership, reconnection, request serialization, and sharing to Home Assistant's central Modbus integration.
+- Use temporary shared Modbus units for setup, reauthentication, and reconfiguration probes without persisting a second connection.
+
+### Compatibility
+- Require Home Assistant 2026.10.0 or newer. Existing OVUM config entries, entity identities, and integration-managed history remain unchanged.
+
 ## 0.1.1 - 2026-09-30
 
 ### Fixed
