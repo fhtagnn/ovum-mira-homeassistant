@@ -1,5 +1,6 @@
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import voluptuous as vol
@@ -25,15 +26,29 @@ HOST = "192.0.2.10"
 PORT = 502
 
 
-def _open_result(*, buffer=True, dhw=True, hk1=True):
-    connection = SimpleNamespace(close=AsyncMock())
+def _system_result(*, buffer=True, dhw=True, hk1=True):
     capabilities = SimpleNamespace(
         heating_buffer_type=BufferSystemType.BUFFER if buffer else BufferSystemType.NONE,
         hot_water_installed=SwitchState.ON if dhw else SwitchState.OFF,
         heating_circuit_1_type=HeatingCircuitType.MIXED if hk1 else HeatingCircuitType.NONE,
     )
-    system = SimpleNamespace(hsm=SimpleNamespace(capabilities=capabilities))
-    return connection, system
+    return SimpleNamespace(hsm=SimpleNamespace(capabilities=capabilities))
+
+
+def _temporary_system_mock(*outcomes):
+    """Return a recorded factory for temporary-system async contexts."""
+    remaining = iter(outcomes)
+    opener = MagicMock()
+
+    @asynccontextmanager
+    async def temporary_system(*args, **kwargs):
+        outcome = next(remaining)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        yield outcome
+
+    opener.side_effect = temporary_system
+    return opener
 
 
 async def _start_user_flow(hass):
@@ -58,16 +73,16 @@ async def test_full_user_flow(hass):
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
 
-    connection, system = _open_result()
+    opener = _temporary_system_mock(_system_result())
     with patch(
-        "custom_components.ovum_mira.config_flow.async_open_system",
-        new=AsyncMock(return_value=(connection, system)),
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=opener,
     ):
         result = await _submit_connection(hass, result["flow_id"], login="1234", wpm_count=2)
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "installation"
-    assert connection.close.await_count == 1
+    assert opener.call_count == 1
 
     # Creating a config entry triggers Home Assistant to set the integration up.
     # Keep this config-flow test isolated from the real Modbus transport; setup
@@ -113,8 +128,8 @@ async def test_invalid_login_code_can_be_corrected(hass):
     assert result["errors"] == {CONF_LOGIN_CODE: "invalid_login_code"}
 
     with patch(
-        "custom_components.ovum_mira.config_flow.async_open_system",
-        new=AsyncMock(return_value=_open_result()),
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=_temporary_system_mock(_system_result()),
     ):
         result = await _submit_connection(hass, result["flow_id"], login="")
 
@@ -125,9 +140,12 @@ async def test_invalid_login_code_can_be_corrected(hass):
 async def test_connection_error_can_be_retried(hass):
     """Test recovery from a temporary connection error."""
     result = await _start_user_flow(hass)
-    opener = AsyncMock(side_effect=[OSError("offline"), _open_result()])
+    opener = _temporary_system_mock(OSError("offline"), _system_result())
 
-    with patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener):
+    with patch(
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=opener,
+    ):
         result = await _submit_connection(hass, result["flow_id"])
         assert result["type"] is FlowResultType.FORM
         assert result["errors"] == {"base": "cannot_connect"}
@@ -136,15 +154,18 @@ async def test_connection_error_can_be_retried(hass):
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "installation"
-    assert opener.await_count == 2
+    assert opener.call_count == 2
 
 
 async def test_auth_error_can_be_retried(hass):
     """Test recovery from a rejected Modbus login code."""
     result = await _start_user_flow(hass)
-    opener = AsyncMock(side_effect=[PermissionError("denied"), _open_result()])
+    opener = _temporary_system_mock(PermissionError("denied"), _system_result())
 
-    with patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener):
+    with patch(
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=opener,
+    ):
         result = await _submit_connection(hass, result["flow_id"], login="1234")
         assert result["errors"] == {"base": "invalid_auth"}
         result = await _submit_connection(hass, result["flow_id"], login="1234")
@@ -163,7 +184,9 @@ async def test_duplicate_device_is_rejected(hass):
     entry.add_to_hass(hass)
 
     result = await _start_user_flow(hass)
-    with patch("custom_components.ovum_mira.config_flow.async_open_system") as opener:
+    with patch(
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system"
+    ) as opener:
         result = await _submit_connection(hass, result["flow_id"])
 
     assert result["type"] is FlowResultType.ABORT
@@ -175,8 +198,10 @@ async def test_installation_form_only_shows_detected_features(hass):
     """Test conditional installation fields when optional systems are absent."""
     result = await _start_user_flow(hass)
     with patch(
-        "custom_components.ovum_mira.config_flow.async_open_system",
-        new=AsyncMock(return_value=_open_result(buffer=False, dhw=False, hk1=False)),
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=_temporary_system_mock(
+            _system_result(buffer=False, dhw=False, hk1=False)
+        ),
     ):
         result = await _submit_connection(hass, result["flow_id"])
 

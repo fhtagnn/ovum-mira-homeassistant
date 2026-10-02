@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from modbus_connection import ModbusConnectionError
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
@@ -63,23 +64,24 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass, holiday_optio
     )
     entry.add_to_hass(hass)
 
-    connection = SimpleNamespace(close=AsyncMock())
     system = object()
     coordinator = SimpleNamespace(
         async_initialize=AsyncMock(),
         async_save_persistent_state=AsyncMock(),
     )
-    opener = AsyncMock(return_value=(connection, system))
+    opener = AsyncMock(return_value=system)
     forward = AsyncMock()
 
     with (
-        patch("custom_components.ovum_mira.async_open_system", new=opener),
+        patch("custom_components.ovum_mira.async_get_system", new=opener),
         patch("custom_components.ovum_mira.OvumMiraCoordinator", return_value=coordinator) as coordinator_cls,
         patch.object(hass.config_entries, "async_forward_entry_setups", new=forward),
     ):
         assert await async_setup_entry(hass, entry) is True
 
     opener.assert_awaited_once_with(
+        hass,
+        entry,
         HOST,
         PORT,
         2,
@@ -95,7 +97,6 @@ async def test_setup_entry_initializes_runtime_and_platforms(hass, holiday_optio
     )
     coordinator.async_initialize.assert_awaited_once_with()
     forward.assert_awaited_once_with(entry, PLATFORMS)
-    assert entry.runtime_data.connection is connection
     assert entry.runtime_data.system is system
     assert entry.runtime_data.coordinator is coordinator
 
@@ -106,38 +107,41 @@ async def test_setup_entry_rejects_invalid_auth(hass):
     opener = AsyncMock(side_effect=PermissionError("denied"))
 
     with (
-        patch("custom_components.ovum_mira.async_open_system", new=opener),
+        patch("custom_components.ovum_mira.async_get_system", new=opener),
         pytest.raises(ConfigEntryAuthFailed, match="login was rejected"),
     ):
         await async_setup_entry(hass, entry)
 
 
-async def test_setup_entry_retries_network_failure(hass):
+@pytest.mark.parametrize(
+    "error",
+    [OSError("offline"), ModbusConnectionError("connection lost")],
+)
+async def test_setup_entry_retries_network_failure(hass, error):
     """Turn a temporary network error into ConfigEntryNotReady."""
     entry = _entry()
-    opener = AsyncMock(side_effect=OSError("offline"))
+    opener = AsyncMock(side_effect=error)
 
     with (
-        patch("custom_components.ovum_mira.async_open_system", new=opener),
-        pytest.raises(ConfigEntryNotReady, match="offline"),
+        patch("custom_components.ovum_mira.async_get_system", new=opener),
+        pytest.raises(ConfigEntryNotReady),
     ):
         await async_setup_entry(hass, entry)
 
 
-async def test_setup_entry_closes_connection_if_coordinator_init_fails(hass):
-    """Do not leak the Modbus connection when derived-state initialization fails."""
+async def test_setup_entry_stops_if_coordinator_init_fails(hass):
+    """Do not forward platforms when derived-state initialization fails."""
     entry = _entry()
     entry.add_to_hass(hass)
 
-    connection = SimpleNamespace(close=AsyncMock())
     system = object()
     coordinator = SimpleNamespace(async_initialize=AsyncMock(side_effect=RuntimeError("store failed")))
     forward = AsyncMock()
 
     with (
         patch(
-            "custom_components.ovum_mira.async_open_system",
-            new=AsyncMock(return_value=(connection, system)),
+            "custom_components.ovum_mira.async_get_system",
+            new=AsyncMock(return_value=system),
         ),
         patch("custom_components.ovum_mira.OvumMiraCoordinator", return_value=coordinator),
         patch.object(hass.config_entries, "async_forward_entry_setups", new=forward),
@@ -145,16 +149,14 @@ async def test_setup_entry_closes_connection_if_coordinator_init_fails(hass):
     ):
         await async_setup_entry(hass, entry)
 
-    connection.close.assert_awaited_once_with()
     forward.assert_not_awaited()
 
 
-async def test_unload_entry_persists_and_closes_connection(hass):
-    """Persist derived state and close Modbus after successful platform unload."""
+async def test_unload_entry_persists_state(hass):
+    """Persist derived state after successful platform unload."""
     entry = _entry()
     coordinator = SimpleNamespace(async_save_persistent_state=AsyncMock())
-    connection = SimpleNamespace(close=AsyncMock())
-    entry.runtime_data = OvumRuntime(connection, object(), coordinator)
+    entry.runtime_data = OvumRuntime(object(), coordinator)
     unload = AsyncMock(return_value=True)
 
     with patch.object(hass.config_entries, "async_unload_platforms", new=unload):
@@ -162,15 +164,13 @@ async def test_unload_entry_persists_and_closes_connection(hass):
 
     unload.assert_awaited_once_with(entry, PLATFORMS)
     coordinator.async_save_persistent_state.assert_awaited_once_with()
-    connection.close.assert_awaited_once_with()
 
 
-async def test_unload_entry_keeps_connection_when_platform_unload_fails(hass):
-    """Keep runtime resources alive if Home Assistant cannot unload all platforms."""
+async def test_unload_entry_keeps_runtime_when_platform_unload_fails(hass):
+    """Keep runtime state untouched if Home Assistant cannot unload all platforms."""
     entry = _entry()
     coordinator = SimpleNamespace(async_save_persistent_state=AsyncMock())
-    connection = SimpleNamespace(close=AsyncMock())
-    entry.runtime_data = OvumRuntime(connection, object(), coordinator)
+    entry.runtime_data = OvumRuntime(object(), coordinator)
 
     with patch.object(
         hass.config_entries,
@@ -180,4 +180,3 @@ async def test_unload_entry_keeps_connection_when_platform_unload_fails(hass):
         assert await async_unload_entry(hass, entry) is False
 
     coordinator.async_save_persistent_state.assert_not_awaited()
-    connection.close.assert_not_awaited()
