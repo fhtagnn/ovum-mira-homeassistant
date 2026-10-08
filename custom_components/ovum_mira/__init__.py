@@ -1,7 +1,13 @@
+from modbus_connection import ModbusError
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    ConfigEntryNotReady,
+    HomeAssistantError,
+)
 
 from .const import (
     CONF_BUFFER_SENSOR_COUNT,
@@ -16,7 +22,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import OvumMiraCoordinator
-from .runtime import OvumRuntime, async_open_system, installation_options_from_entry
+from .runtime import OvumRuntime, async_get_system, installation_options_from_entry
 
 
 type OvumConfigEntry = ConfigEntry[OvumRuntime]
@@ -73,7 +79,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
     login = entry.data.get(CONF_LOGIN_CODE)
 
     try:
-        connection, system = await async_open_system(
+        system = await async_get_system(
+            hass,
+            entry,
             entry.data[CONF_HOST],
             entry.data[CONF_PORT],
             entry.data.get(CONF_WPM_COUNT, 1),
@@ -82,7 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
         )
     except PermissionError as err:
         raise ConfigEntryAuthFailed("OVUM MIRA login was rejected") from err
-    except OSError as err:
+    except (HomeAssistantError, ModbusError, OSError) as err:
         raise ConfigEntryNotReady(f"Unable to connect to OVUM MIRA: {err}") from err
 
     holiday_threshold = (
@@ -93,21 +101,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool
     coordinator = OvumMiraCoordinator(
         hass, system, entry.entry_id, dhw_holiday_target_threshold_c=holiday_threshold
     )
-    try:
-        await coordinator.async_initialize()
-    except Exception:
-        await connection.close()
-        raise
+    await coordinator.async_initialize()
 
-    entry.runtime_data = OvumRuntime(connection, system, coordinator)
+    entry.runtime_data = OvumRuntime(system, coordinator)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: OvumConfigEntry) -> bool:
-    """Unload OVUM MIRA and close the Modbus connection."""
+    """Unload OVUM MIRA; Home Assistant releases its shared Modbus units."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
     await entry.runtime_data.coordinator.async_save_persistent_state()
-    await entry.runtime_data.connection.close()
     return True
