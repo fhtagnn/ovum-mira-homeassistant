@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-08
+
 ### Added
 - Add enabled-by-default semantic binary sensors for installation-wide Modbus communication, per-WPM explicit problems, and per-WPM running state.
 - Add importable Home Assistant blueprints for system-health notifications, WPM run start/end messages, and selectable WPM status observation.

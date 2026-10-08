@@ -13,7 +13,7 @@ def _load_json(relative: str):
 
 def test_manifest_and_diagnostics_version_constant_match():
     manifest = _load_json("custom_components/ovum_mira/manifest.json")
-    assert manifest["version"] == INTEGRATION_VERSION == "0.1.1"
+    assert manifest["version"] == INTEGRATION_VERSION == "0.2.0"
 
 
 def test_shared_modbus_contract_requires_home_assistant_2026_10():
