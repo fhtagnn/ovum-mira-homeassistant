@@ -19,19 +19,21 @@ This is an independent community project. It is **not affiliated with, maintaine
 
 The integration can change heat-pump settings. Review your installation and controller documentation before enabling writable entities. Thermal-energy values derived from MIRA power data are intended for monitoring and are not metering-grade.
 
-## Tested environment
+## Compatibility and tested environment
 
-- Home Assistant 2026.8.x
+- Home Assistant 2026.10.0 or newer
 - MIRA 1.16
 - Modbus TCP
 - HSM Unit ID 110
 - One WPM unit, Unit ID 111
 
+The central Home Assistant Modbus connection path is covered by automated tests against Home Assistant 2026.10. Real-device validation of this transport change is still pending; the preceding direct-connection implementation was validated on Home Assistant 2026.8.x with the MIRA environment above.
+
 Other compatible MIRA 1.1.x systems may work, but should be treated as unverified until reported by users. Multiple WPM units and WPM Unit IDs other than 111 are supported by the configuration but have not been tested on real hardware.
 
 ## Features
 
-- Local Modbus TCP communication; no cloud service required
+- Local Modbus TCP communication through Home Assistant's shared Modbus connection; no cloud service required
 - Automatic detection of domestic hot water, heating buffer, and heating circuits
 - Optional one-/two-sensor DHW and heating-buffer configuration
 - Multiple WPM support
@@ -90,6 +92,8 @@ The initial setup asks for the values needed to reach the existing MIRA installa
 - **Modbus login code** — optional numeric login configured on MIRA. Leave the field empty when Modbus login is disabled on the controller.
 
 The connection is tested before the config entry is created. Later changes to host, port, WPM count, or the Modbus login code should be made with Home Assistant's **Reconfigure** flow. The stored code is shown as a masked field; an empty value is valid only when controller login is disabled. Immediately before each controller write, the integration checks login status register 100 on every configured OVUM unit. An expired session is renewed with the stored code; a rejected stored code starts Home Assistant's **Reauthenticate** flow. Both reconfiguration flows validate the complete connection before saving and keep the existing config entry, preserving the integration's data association. Changing the code on MIRA may leave an already-open Modbus session readable; reconfigure the integration immediately so the stored code is updated before the next write.
+
+Home Assistant 2026.10 or newer owns the underlying Modbus connection, reconnects it when needed, and serializes requests from integrations that use the same host and port. OVUM MIRA still stores its own host, port, WPM count, and login code; no separate `modbus:` YAML configuration is required.
 
 ## Installation options
 

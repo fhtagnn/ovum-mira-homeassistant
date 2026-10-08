@@ -23,7 +23,7 @@ from .const import (
     MAX_WPM_COUNT,
 )
 from .ovum_mira_modbus import BufferSystemType, HeatingCircuitType, InstallationOptions, SwitchState
-from .runtime import async_open_system, installation_options_from_entry
+from .runtime import async_get_temporary_system, installation_options_from_entry
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -66,13 +66,15 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return {CONF_LOGIN_CODE: "invalid_login_code"}
 
         try:
-            connection, _system = await async_open_system(
+            async with async_get_temporary_system(
+                self.hass,
                 host,
                 port,
                 wpm_count,
                 login_code=login_code,
                 options=installation_options_from_entry(entry),
-            )
+            ):
+                pass
         except PermissionError as err:
             _LOGGER.warning("OVUM MIRA login validation was rejected: %s", err)
             return {"base": "invalid_auth"}
@@ -84,7 +86,6 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             return {"base": "cannot_connect"}
 
-        await connection.close()
         return {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -102,13 +103,22 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(f"{host}:{port}")
                 self._abort_if_unique_id_configured()
                 try:
-                    connection, system = await async_open_system(
+                    async with async_get_temporary_system(
+                        self.hass,
                         host,
                         port,
                         wpm_count,
                         login_code=login_code,
                         options=InstallationOptions(),
-                    )
+                    ) as system:
+                        caps = system.hsm.capabilities
+                        self._detected = {
+                            "buffer": caps.heating_buffer_type
+                            not in (None, BufferSystemType.NONE),
+                            "dhw": caps.hot_water_installed == SwitchState.ON,
+                            "hk1": caps.heating_circuit_1_type
+                            not in (None, HeatingCircuitType.NONE),
+                        }
                 except PermissionError as err:
                     _LOGGER.warning("OVUM MIRA login validation was rejected: %s", err)
                     errors["base"] = "invalid_auth"
@@ -120,15 +130,6 @@ class OvumMiraConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                     errors["base"] = "cannot_connect"
                 else:
-                    try:
-                        caps = system.hsm.capabilities
-                        self._detected = {
-                            "buffer": caps.heating_buffer_type not in (None, BufferSystemType.NONE),
-                            "dhw": caps.hot_water_installed == SwitchState.ON,
-                            "hk1": caps.heating_circuit_1_type not in (None, HeatingCircuitType.NONE),
-                        }
-                    finally:
-                        await connection.close()
                     self._connection_data = {
                         CONF_HOST: host,
                         CONF_PORT: port,

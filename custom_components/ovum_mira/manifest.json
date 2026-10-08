@@ -5,12 +5,19 @@
     "@fhtagnn"
   ],
   "config_flow": true,
+  "dependencies": [
+    "modbus"
+  ],
   "documentation": "https://github.com/fhtagnn/ovum-mira-homeassistant",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/fhtagnn/ovum-mira-homeassistant/issues",
+  "loggers": [
+    "modbus_connection",
+    "tmodbus"
+  ],
   "requirements": [
-    "modbus-connection[tmodbus]>=4.12.3"
+    "modbus-connection>=4.12.3"
   ],
   "version": "0.1.1"
 }

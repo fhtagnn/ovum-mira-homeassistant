@@ -1,5 +1,6 @@
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -37,8 +38,20 @@ def _entry(*, host=HOST, port=PORT, login="1234", wpm_count=1):
     )
 
 
-def _open_result():
-    return SimpleNamespace(close=AsyncMock()), SimpleNamespace()
+def _temporary_system_mock(*outcomes):
+    """Return a recorded factory for temporary-system async contexts."""
+    remaining = iter(outcomes)
+    opener = MagicMock()
+
+    @asynccontextmanager
+    async def temporary_system(*args, **kwargs):
+        outcome = next(remaining)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        yield outcome
+
+    opener.side_effect = temporary_system
+    return opener
 
 
 async def _start_reauth(hass, entry):
@@ -70,10 +83,12 @@ async def test_reauth_success_updates_only_login_code(hass):
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reauth_confirm"
 
-    connection, system = _open_result()
-    opener = AsyncMock(return_value=(connection, system))
+    opener = _temporary_system_mock(SimpleNamespace())
     with (
-        patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener),
+        patch(
+            "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+            new=opener,
+        ),
         patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -86,10 +101,9 @@ async def test_reauth_success_updates_only_login_code(hass):
     assert entry.data[CONF_LOGIN_CODE] == "2222"
     assert entry.data[CONF_HOST] == HOST
     assert entry.data[CONF_PORT] == PORT
-    connection.close.assert_awaited_once_with()
-    assert opener.await_args.kwargs["login_code"] == 2222
-    assert opener.await_args.kwargs["options"].hot_water_sensor_count == 2
-    assert opener.await_args.kwargs["options"].heating_circuit_1_room_sensor is True
+    assert opener.call_args.kwargs["login_code"] == 2222
+    assert opener.call_args.kwargs["options"].hot_water_sensor_count == 2
+    assert opener.call_args.kwargs["options"].heating_circuit_1_room_sensor is True
     schedule_reload.assert_called_once_with(entry.entry_id)
 
 
@@ -98,7 +112,9 @@ async def test_reauth_invalid_login_can_be_corrected(hass):
     entry.add_to_hass(hass)
     result = await _start_reauth(hass, entry)
 
-    with patch("custom_components.ovum_mira.config_flow.async_open_system") as opener:
+    with patch(
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system"
+    ) as opener:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_LOGIN_CODE: "not-a-number"},
@@ -108,11 +124,10 @@ async def test_reauth_invalid_login_can_be_corrected(hass):
     assert result["errors"] == {CONF_LOGIN_CODE: "invalid_login_code"}
     opener.assert_not_called()
 
-    connection, system = _open_result()
     with (
         patch(
-            "custom_components.ovum_mira.config_flow.async_open_system",
-            new=AsyncMock(return_value=(connection, system)),
+            "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+            new=_temporary_system_mock(SimpleNamespace()),
         ),
         patch.object(hass.config_entries, "async_schedule_reload"),
     ):
@@ -132,8 +147,8 @@ async def test_reauth_auth_error_is_reported(hass):
     result = await _start_reauth(hass, entry)
 
     with patch(
-        "custom_components.ovum_mira.config_flow.async_open_system",
-        new=AsyncMock(side_effect=PermissionError("denied")),
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=_temporary_system_mock(PermissionError("denied")),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -162,12 +177,14 @@ async def test_reconfigure_success_updates_connection_and_unique_id(hass):
     assert login_selector.config["type"] == "password"
     assert login_field.description == {"suggested_value": "1234"}
 
-    connection, system = _open_result()
-    opener = AsyncMock(return_value=(connection, system))
+    opener = _temporary_system_mock(SimpleNamespace())
     new_host = "192.0.2.20"
     new_port = 1502
     with (
-        patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener),
+        patch(
+            "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+            new=opener,
+        ),
         patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -187,9 +204,8 @@ async def test_reconfigure_success_updates_connection_and_unique_id(hass):
     assert entry.data[CONF_WPM_COUNT] == 2
     assert entry.data[CONF_LOGIN_CODE] == "5678"
     assert entry.unique_id == f"{new_host}:{new_port}"
-    connection.close.assert_awaited_once_with()
-    assert opener.await_args.args == (new_host, new_port, 2)
-    assert opener.await_args.kwargs["login_code"] == 5678
+    assert opener.call_args.args[1:] == (new_host, new_port, 2)
+    assert opener.call_args.kwargs["login_code"] == 5678
     schedule_reload.assert_called_once_with(entry.entry_id)
 
 
@@ -197,10 +213,13 @@ async def test_reconfigure_connection_error_can_be_retried(hass):
     entry = _entry()
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry)
-    opener = AsyncMock(side_effect=[OSError("offline"), _open_result()])
+    opener = _temporary_system_mock(OSError("offline"), SimpleNamespace())
 
     with (
-        patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener),
+        patch(
+            "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+            new=opener,
+        ),
         patch.object(hass.config_entries, "async_schedule_reload"),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -226,7 +245,7 @@ async def test_reconfigure_connection_error_can_be_retried(hass):
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_WPM_COUNT] == 2
-    assert opener.await_count == 2
+    assert opener.call_count == 2
 
 
 async def test_reconfigure_invalid_login_does_not_replace_working_configuration(hass):
@@ -234,7 +253,9 @@ async def test_reconfigure_invalid_login_does_not_replace_working_configuration(
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry)
 
-    with patch("custom_components.ovum_mira.config_flow.async_open_system") as opener:
+    with patch(
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system"
+    ) as opener:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
@@ -257,8 +278,8 @@ async def test_reconfigure_rejected_login_does_not_replace_working_configuration
     result = await _start_reconfigure(hass, entry)
 
     with patch(
-        "custom_components.ovum_mira.config_flow.async_open_system",
-        new=AsyncMock(side_effect=PermissionError("denied")),
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=_temporary_system_mock(PermissionError("denied")),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -279,11 +300,13 @@ async def test_reconfigure_can_disable_login(hass):
     entry = _entry(login="1234")
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry)
-    connection, system = _open_result()
-    opener = AsyncMock(return_value=(connection, system))
+    opener = _temporary_system_mock(SimpleNamespace())
 
     with (
-        patch("custom_components.ovum_mira.config_flow.async_open_system", new=opener),
+        patch(
+            "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+            new=opener,
+        ),
         patch.object(hass.config_entries, "async_schedule_reload"),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -299,7 +322,7 @@ async def test_reconfigure_can_disable_login(hass):
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_LOGIN_CODE] == ""
-    assert opener.await_args.kwargs["login_code"] is None
+    assert opener.call_args.kwargs["login_code"] is None
 
 
 async def test_reconfigure_rejects_host_port_used_by_another_entry(hass):
@@ -309,10 +332,10 @@ async def test_reconfigure_rejects_host_port_used_by_another_entry(hass):
     other.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry)
 
-    connection, system = _open_result()
+    opener = _temporary_system_mock(SimpleNamespace())
     with patch(
-        "custom_components.ovum_mira.config_flow.async_open_system",
-        new=AsyncMock(return_value=(connection, system)),
+        "custom_components.ovum_mira.config_flow.async_get_temporary_system",
+        new=opener,
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -328,4 +351,4 @@ async def test_reconfigure_rejects_host_port_used_by_another_entry(hass):
     assert entry.data[CONF_HOST] == HOST
     assert entry.data[CONF_PORT] == PORT
     assert entry.unique_id == f"{HOST}:{PORT}"
-    connection.close.assert_awaited_once_with()
+    assert opener.call_count == 1
