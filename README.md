@@ -11,7 +11,7 @@
 
 Community Home Assistant integration for OVUM heat pumps using the MIRA controller and Modbus TCP.
 
-> **Release status:** `0.1.1` is the current stable release. Real-device validation currently covers the tested environment listed below.
+> **Release status:** `0.2.0` is the current stable release. Real-device validation currently covers the tested environment listed below.
 
 ## Disclaimer
 
