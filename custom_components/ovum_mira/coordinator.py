@@ -65,6 +65,10 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
         self.dhw_analytics = DhwAnalytics(
             hass, entry_id, holiday_target_threshold_c=dhw_holiday_target_threshold_c
         )
+        # ``async_open_system`` completed one full device refresh before the
+        # coordinator is created, so communication starts in a known-good state.
+        self.modbus_available = True
+        self.last_successful_modbus_update = dt_util.utcnow()
         self._store: Store[dict[str, Any]] = EnergyStore(
             hass,
             f"{DOMAIN}.{entry_id}.energy",
@@ -123,7 +127,15 @@ class OvumMiraCoordinator(DataUpdateCoordinator[None]):
     async def _async_update_data(self) -> None:
         try:
             await self.system.async_update()
+        except Exception as err:
+            self.modbus_available = False
+            raise UpdateFailed(f"Error communicating with OVUM MIRA: {err}") from err
+        self.modbus_available = True
+        self.last_successful_modbus_update = dt_util.utcnow()
+        try:
             self._update_derived_data()
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with OVUM MIRA: {err}") from err
+            raise UpdateFailed(
+                f"Error updating OVUM MIRA derived data: {err}"
+            ) from err
         return None

@@ -181,6 +181,11 @@
         }
       }
     },
+    "binary_sensor": {
+      "modbus_communication": {"name": "Modbus communication"},
+      "wpm_problem": {"name": "Problem"},
+      "wpm_running": {"name": "Running"}
+    },
     "number": {
       "pv_hot_water_target_temperature": {"name": "PV – hot water target temperature"},
       "pv_heating_buffer_target_temperature": {"name": "PV – heating buffer target temperature"},

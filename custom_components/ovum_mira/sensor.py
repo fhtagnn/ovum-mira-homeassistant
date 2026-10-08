@@ -300,7 +300,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: OvumConfigEntry, async_a
         unit_id = FIRST_WPM_UNIT + idx
         entities.extend(OvumWpmSensor(coordinator, entry.entry_id, unit_id, idx, d) for d in wpm_defs)
         entities.extend(OvumWpmEnergySensor(coordinator, entry.entry_id, unit_id, d) for d in energy_defs)
-        status = OvumWpmSensor(coordinator, entry.entry_id, unit_id, idx, SensorDef(key="status", value=lambda w: w.readings.status.name.lower() if isinstance(w.readings.status, WpmStatus) else None, device_class=SensorDeviceClass.ENUM))
+        status = OvumWpmSensor(
+            coordinator,
+            entry.entry_id,
+            unit_id,
+            idx,
+            SensorDef(
+                key="status",
+                translation_key="wpm_status",
+                value=lambda w: w.readings.status.name.lower()
+                if isinstance(w.readings.status, WpmStatus)
+                else None,
+                device_class=SensorDeviceClass.ENUM,
+            ),
+        )
         status._attr_options = [s.name.lower() for s in WpmStatus]
         entities.append(status)
 

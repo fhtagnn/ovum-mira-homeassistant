@@ -1,0 +1,207 @@
+blueprint:
+  name: OVUM MIRA - Run start and end notifications
+  description: >-
+    Sends at most one start and one end message for each observed WPM compressor
+    cycle. Internal transitions such as automatic defrost do not create a new
+    run. Startup restoration and unavailable states are ignored.
+  domain: automation
+  author: fhtagnn
+  source_url: https://github.com/fhtagnn/ovum-mira-homeassistant/blob/main/blueprints/automation/ovum_mira/run_cycle.yaml
+  homeassistant:
+    min_version: 2026.8.0
+  input:
+    running_sensor:
+      name: WPM running sensor
+      description: Select the running sensor of one OVUM MIRA WPM.
+      selector:
+        entity:
+          filter:
+            - integration: ovum_mira
+              domain: binary_sensor
+              device_class: running
+    minimum_runtime:
+      name: Minimum runtime
+      description: Suppress both messages when a run ends before this duration.
+      default:
+        hours: 0
+        minutes: 0
+        seconds: 30
+      selector:
+        duration: {}
+    start_notification:
+      name: Notify on start
+      default: true
+      selector:
+        boolean: {}
+    end_notification:
+      name: Notify on end
+      default: true
+      selector:
+        boolean: {}
+    notification_targets:
+      name: Notification targets
+      description: Optional notify entities.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: notify
+    persistent_notification:
+      name: Home Assistant persistent notification
+      default: false
+      selector:
+        boolean: {}
+    message_language:
+      name: Message language
+      default: en
+      selector:
+        select:
+          options:
+            - label: English
+              value: en
+            - label: Deutsch
+              value: de
+    additional_actions:
+      name: Additional actions
+      description: >-
+        Optional actions such as TTS or lights. Templates can use ovum_event,
+        ovum_title, ovum_message, ovum_source_entity, ovum_status, and
+        ovum_run_duration_seconds.
+      default: []
+      selector:
+        action: {}
+
+triggers:
+  - trigger: state
+    entity_id: !input running_sensor
+    from: "off"
+    to: "on"
+    for: !input minimum_runtime
+    id: run_started
+  - trigger: state
+    entity_id: !input running_sensor
+    from: "on"
+    to: "off"
+    id: run_ended
+
+variables:
+  running_sensor: !input running_sensor
+  minimum_runtime: !input minimum_runtime
+  notification_targets: !input notification_targets
+  use_persistent_notification: !input persistent_notification
+  send_start: !input start_notification
+  send_end: !input end_notification
+  selected_language: !input message_language
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ (trigger.id == 'run_started' and send_start)
+         or (trigger.id == 'run_ended' and send_end) }}
+  - condition: template
+    value_template: >-
+      {% if trigger.id != 'run_ended' %}
+        true
+      {% else %}
+        {% set minimum_seconds =
+            (minimum_runtime.get('hours', 0) | int) * 3600
+            + (minimum_runtime.get('minutes', 0) | int) * 60
+            + (minimum_runtime.get('seconds', 0) | int) %}
+        {{ (as_timestamp(trigger.to_state.last_changed)
+            - as_timestamp(trigger.from_state.last_changed)) >= minimum_seconds }}
+      {% endif %}
+
+actions:
+  - variables:
+      ovum_event: "{{ trigger.id }}"
+      ovum_source_entity: "{{ running_sensor }}"
+      ovum_status: >-
+        {{ state_attr(running_sensor, 'wpm_status')
+           if trigger.id == 'run_started'
+           else trigger.from_state.attributes.get('wpm_status', 'unknown') }}
+      ovum_run_duration_seconds: >-
+        {% if trigger.id == 'run_ended' %}
+          {{ (as_timestamp(trigger.to_state.last_changed)
+              - as_timestamp(trigger.from_state.last_changed)) | int(0) }}
+        {% else %}
+          0
+        {% endif %}
+      event_name: "{{ state_attr(running_sensor, 'friendly_name') or running_sensor }}"
+  - variables:
+      status_label: >-
+        {% set en = {
+          'start': 'Start',
+          'hot_water': 'Hot water',
+          'heating': 'Heating',
+          'cooling': 'Cooling',
+          'defrost': 'Defrost',
+          'manual_defrost': 'Manual defrost',
+          'stopping': 'Stopping'
+        } %}
+        {% set de = {
+          'start': 'Start',
+          'hot_water': 'Warmwasser',
+          'heating': 'Heizen',
+          'cooling': 'Kühlen',
+          'defrost': 'Abtauen',
+          'manual_defrost': 'Manuell abtauen',
+          'stopping': 'Stoppt'
+        } %}
+        {{ (de if selected_language == 'de' else en).get(ovum_status, ovum_status) }}
+      duration_label: >-
+        {% set total = ovum_run_duration_seconds | int(0) %}
+        {% set hours = total // 3600 %}
+        {% set minutes = (total % 3600) // 60 %}
+        {{ (hours ~ ' h ') if hours else '' }}{{ minutes }} min
+  - variables:
+      ovum_title: >-
+        {% if selected_language == 'de' %}
+          OVUM MIRA: Wärmepumpe {{ 'gestartet' if ovum_event == 'run_started' else 'beendet' }}
+        {% else %}
+          OVUM MIRA: Heat pump {{ 'started' if ovum_event == 'run_started' else 'stopped' }}
+        {% endif %}
+      ovum_message: >-
+        {% if selected_language == 'de' %}
+          {% if ovum_event == 'run_started' %}
+            {{ event_name }} läuft. Aktueller Status: {{ status_label }}.
+          {% else %}
+            {{ event_name }} wurde nach {{ duration_label }} beendet.
+          {% endif %}
+        {% else %}
+          {% if ovum_event == 'run_started' %}
+            {{ event_name }} is running. Current status: {{ status_label }}.
+          {% else %}
+            {{ event_name }} stopped after {{ duration_label }}.
+          {% endif %}
+        {% endif %}
+      persistent_notification_id: >-
+        {{ ('ovum_mira_run_' ~ ovum_source_entity) | replace('.', '_') }}
+  - if:
+      - condition: template
+        value_template: "{{ use_persistent_notification }}"
+    then:
+      - action: persistent_notification.create
+        data:
+          notification_id: "{{ persistent_notification_id }}"
+          title: "{{ ovum_title }}"
+          message: "{{ ovum_message }}"
+  - if:
+      - condition: template
+        value_template: "{{ notification_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: !input notification_targets
+        data:
+          title: "{{ ovum_title }}"
+          message: "{{ ovum_message }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ true }}"
+        sequence: !input additional_actions
+
+mode: queued
+max: 10
+max_exceeded: silent
