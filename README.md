@@ -22,7 +22,7 @@ The integration can change heat-pump settings. Review your installation and cont
 ## Compatibility and tested environment
 
 - Home Assistant 2026.10.0 or newer
-- MIRA 1.16
+- MIRA 1.1.6
 - Modbus TCP
 - HSM Unit ID 110
 - One WPM unit, Unit ID 111
