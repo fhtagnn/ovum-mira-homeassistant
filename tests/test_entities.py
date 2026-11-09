@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from homeassistant.components.water_heater import STATE_HEAT_PUMP
+from homeassistant.components.water_heater import STATE_HEAT_PUMP, WaterHeaterEntity
 from homeassistant.const import STATE_OFF
 
 from custom_components.ovum_mira.const import DOMAIN
@@ -148,8 +148,19 @@ async def test_water_heater_exposes_state_and_controls():
     coordinator = _coordinator(SimpleNamespace(hsm=SimpleNamespace(hot_water=hot_water)))
     entity = OvumHotWater(coordinator, "entry-id")
 
-    assert entity.current_temperature == 47.5
-    assert entity.target_temperature == 50
+    current_property = (
+        "native_current_temperature"
+        if hasattr(type(entity), "native_current_temperature")
+        else "current_temperature"
+    )
+    target_property = (
+        "native_target_temperature"
+        if hasattr(type(entity), "native_target_temperature")
+        else "target_temperature"
+    )
+
+    assert getattr(entity, current_property) == 47.5
+    assert getattr(entity, target_property) == 50
     assert entity.current_operation == STATE_HEAT_PUMP
 
     await entity.async_set_temperature(temperature=50.6)
@@ -170,6 +181,26 @@ async def test_water_heater_exposes_state_and_controls():
     await entity.async_turn_off()
     settings.async_set_enabled.assert_awaited_once_with(False)
     coordinator.async_request_refresh.assert_awaited_once_with()
+
+
+def test_water_heater_uses_supported_temperature_api():
+    """Use native names on 2026.11 without breaking the 2026.10 baseline."""
+    class_attributes = vars(OvumHotWater)
+
+    if hasattr(WaterHeaterEntity, "native_temperature_unit"):
+        assert "_attr_native_temperature_unit" in class_attributes
+        assert "native_current_temperature" in class_attributes
+        assert "native_target_temperature" in class_attributes
+        assert "_attr_temperature_unit" not in class_attributes
+        assert "current_temperature" not in class_attributes
+        assert "target_temperature" not in class_attributes
+    else:
+        assert "_attr_temperature_unit" in class_attributes
+        assert "current_temperature" in class_attributes
+        assert "target_temperature" in class_attributes
+        assert "_attr_native_temperature_unit" not in class_attributes
+        assert "native_current_temperature" not in class_attributes
+        assert "native_target_temperature" not in class_attributes
 
 
 async def test_water_heater_ignores_missing_temperature():

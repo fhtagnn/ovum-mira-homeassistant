@@ -9,10 +9,17 @@ from .ovum_mira_modbus import SwitchState
 
 PARALLEL_UPDATES = 1
 
+_HAS_NATIVE_TEMPERATURE_API = hasattr(
+    WaterHeaterEntity, "native_temperature_unit"
+)
+
 
 class OvumHotWater(OvumMiraEntity, WaterHeaterEntity):
     _attr_translation_key = "hot_water"
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if _HAS_NATIVE_TEMPERATURE_API:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_min_temp = 0
     _attr_max_temp = 62
     _attr_target_temperature_step = 1
@@ -25,13 +32,20 @@ class OvumHotWater(OvumMiraEntity, WaterHeaterEntity):
     def _hot_water(self):
         return self.coordinator.system.hsm.hot_water
 
-    @property
-    def current_temperature(self) -> float | None:
+    def _current_temperature(self) -> float | None:
+        """Return the measured domestic-hot-water temperature."""
         return self._hot_water.readings.primary_temperature
 
-    @property
-    def target_temperature(self) -> float | None:
+    def _target_temperature(self) -> float | None:
+        """Return the domestic-hot-water target temperature."""
         return self._hot_water.settings.target_temperature
+
+    if _HAS_NATIVE_TEMPERATURE_API:
+        native_current_temperature = property(_current_temperature)
+        native_target_temperature = property(_target_temperature)
+    else:
+        current_temperature = property(_current_temperature)
+        target_temperature = property(_target_temperature)
 
     @property
     def current_operation(self) -> str | None:

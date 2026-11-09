@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 from modbus_connection import ModbusTcpParams
 import pytest
 from homeassistant.components.modbus.connection import DATA_MODBUS_CONNECTIONS
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ovum_mira.const import DOMAIN
 from custom_components.ovum_mira.ovum_mira_modbus import InstallationOptions
@@ -12,6 +11,7 @@ from custom_components.ovum_mira.runtime import (
     async_get_system,
     async_get_temporary_system,
 )
+from tests.ha_compat import MockConfigEntry
 
 
 async def test_get_system_rejects_invalid_wpm_count():

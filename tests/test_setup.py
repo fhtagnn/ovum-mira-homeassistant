@@ -9,7 +9,6 @@ from homeassistant.exceptions import (
     ConfigEntryNotReady,
     HomeAssistantError,
 )
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ovum_mira import async_setup_entry, async_unload_entry
 from custom_components.ovum_mira.const import (
@@ -25,6 +24,7 @@ from custom_components.ovum_mira.const import (
 )
 from custom_components.ovum_mira.ovum_mira_modbus import InstallationOptions
 from custom_components.ovum_mira.runtime import OvumRuntime
+from tests.ha_compat import MockConfigEntry
 
 HOST = "192.0.2.10"
 PORT = 502

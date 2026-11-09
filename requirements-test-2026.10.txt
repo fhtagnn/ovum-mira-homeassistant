@@ -1,0 +1,7 @@
+homeassistant==2026.10.4
+modbus-connection[tmodbus]==4.12.3
+pymodbus==3.13.1
+pytest-homeassistant-custom-component==0.13.375
+pytest-cov==7.1.0
+ruff>=0.12,<1
+voluptuous-serialize==2.7.0
