@@ -1,6 +1,7 @@
-homeassistant==2026.10.0b0
-modbus-connection[tmodbus]==4.12.3
+homeassistant==2026.11.0
+modbus-connection[tmodbus]==4.12.7
 pymodbus==3.13.1
-pytest-homeassistant-custom-component==0.13.368
+pytest-homeassistant==2026.11.0
+pytest-cov==7.1.0
 ruff>=0.12,<1
 voluptuous-serialize==2.7.0

@@ -27,7 +27,7 @@ The integration can change heat-pump settings. Review your installation and cont
 - HSM Unit ID 110
 - One WPM unit, Unit ID 111
 
-The central Home Assistant Modbus connection path is covered by automated tests against Home Assistant 2026.10. Real-device validation of this transport change is still pending; the preceding direct-connection implementation was validated on Home Assistant 2026.8.x with the MIRA environment above.
+The central Home Assistant Modbus connection path is covered by automated tests against Home Assistant 2026.10 and 2026.11. Real-device validation of this transport change is still pending; the preceding direct-connection implementation was validated on Home Assistant 2026.8.x with the MIRA environment above.
 
 Other compatible MIRA 1.1.x systems may work, but should be treated as unverified until reported by users. Multiple WPM units and WPM Unit IDs other than 111 are supported by the configuration but have not been tested on real hardware.
 

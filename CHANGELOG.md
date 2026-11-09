@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+- Use Home Assistant 2026.11's native climate and water-heater temperature API without deprecation warnings while retaining compatibility with Home Assistant 2026.10.
+- Test every change against both Home Assistant 2026.10 and 2026.11, including their matching shared Modbus connection versions.
+- Use Home Assistant's official `pytest-homeassistant` package for the 2026.11 test environment.
+
 ## 0.2.0 - 2026-10-08
 
 ### Added

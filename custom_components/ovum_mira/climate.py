@@ -8,6 +8,8 @@ from .entity import OvumMiraEntity
 
 PARALLEL_UPDATES = 1
 
+_HAS_NATIVE_TEMPERATURE_API = hasattr(ClimateEntity, "native_temperature_unit")
+
 
 class HeatingCircuitClimate(OvumMiraEntity, ClimateEntity):
     """Room climate entity only when a real room probe is configured.
@@ -20,7 +22,10 @@ class HeatingCircuitClimate(OvumMiraEntity, ClimateEntity):
     _attr_hvac_modes = [HVACMode.HEAT]
     _attr_hvac_mode = HVACMode.HEAT
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if _HAS_NATIVE_TEMPERATURE_API:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_min_temp = 0
     _attr_max_temp = 50
     _attr_target_temperature_step = 0.5
@@ -34,14 +39,21 @@ class HeatingCircuitClimate(OvumMiraEntity, ClimateEntity):
     def _circuit(self):
         return self.coordinator.system.hsm.heating_circuit_1
 
-    @property
-    def current_temperature(self) -> float | None:
+    def _current_temperature(self) -> float | None:
+        """Return the measured room temperature."""
         room = self._circuit.room_readings
         return room.actual_room_temperature if room is not None else None
 
-    @property
-    def target_temperature(self) -> float | None:
+    def _target_temperature(self) -> float | None:
+        """Return the configured room target temperature."""
         return self._circuit.settings.room_target_heating
+
+    if _HAS_NATIVE_TEMPERATURE_API:
+        native_current_temperature = property(_current_temperature)
+        native_target_temperature = property(_target_temperature)
+    else:
+        current_temperature = property(_current_temperature)
+        target_temperature = property(_target_temperature)
 
     async def async_set_temperature(self, **kwargs) -> None:
         temperature = kwargs.get(ATTR_TEMPERATURE)

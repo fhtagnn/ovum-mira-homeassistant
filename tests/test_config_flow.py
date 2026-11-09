@@ -8,7 +8,6 @@ from voluptuous_serialize import convert
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ovum_mira.const import (
     CONF_BUFFER_SENSOR_COUNT,
@@ -21,6 +20,7 @@ from custom_components.ovum_mira.const import (
     DOMAIN,
 )
 from custom_components.ovum_mira.ovum_mira_modbus import BufferSystemType, HeatingCircuitType, SwitchState
+from tests.ha_compat import MockConfigEntry
 
 HOST = "192.0.2.10"
 PORT = 502
